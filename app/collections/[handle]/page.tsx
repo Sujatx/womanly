@@ -4,23 +4,23 @@ import { getCategoryProducts, toCard } from '@/lib/dummyjson';
 import PLPFilters from '@/components/PLPFilters';
 import ClientPLP from './plp-client';
 
-interface PageProps {
+export default async function CollectionPage({
+  params,
+  searchParams,
+}: {
   params: { handle: string };
   searchParams?: { q?: string };
-}
-
-export default async function CollectionPage({ params, searchParams }: PageProps) {
+}) {
   const baseProducts = await getCategoryProducts(params.handle, 24);
 
-  if (!baseProducts.length) {
-    notFound();
-  }
+  if (!baseProducts.length) notFound();
 
   const q = (searchParams?.q || '').trim().toLowerCase();
   const filtered = q
-    ? baseProducts.filter(p =>
-        p.title.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q)
+    ? baseProducts.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q)
       )
     : baseProducts;
 
