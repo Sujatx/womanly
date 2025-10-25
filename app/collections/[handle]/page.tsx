@@ -5,17 +5,14 @@ import PLPFilters from '@/components/PLPFilters';
 import ClientPLP from './plp-client';
 
 export default async function CollectionPage(props: any) {
-  // props.params or props.params is sometimes a Promise in Next 15 builds.
-  // Awaiting covers both Promise<object> and plain object.
+  // Accept whatever Next gives (Promise or plain object) and await to normalize.
   const { params, searchParams } = props;
-  const { handle } = await params;
-  const sp = await searchParams; // may be undefined, object, or Promise<object>
+  const { handle } = await params;    // covers Promise<{handle}> and {handle}
+  const sp = await searchParams;      // handles undefined, object, or Promise<object>
 
   const baseProducts = await getCategoryProducts(handle, 24);
 
-  if (!baseProducts.length) {
-    notFound();
-  }
+  if (!baseProducts.length) notFound();
 
   const q = (sp?.q || '').toString().trim().toLowerCase();
   const filtered = q
@@ -30,10 +27,7 @@ export default async function CollectionPage(props: any) {
 
   return (
     <div>
-      <h1
-        className="text-xl"
-        style={{ fontWeight: 600, marginBottom: '0.5rem' }}
-      >
+      <h1 className="text-xl" style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
         {handle.replace('-', ' ').toUpperCase()}
       </h1>
 
