@@ -8,12 +8,18 @@ export default async function CollectionPage({
   params,
   searchParams,
 }: {
-  params: { handle: string };
+  // NOTICE: params is typed as a Promise — Next 15 expects this in some builds.
+  params: Promise<{ handle: string }>;
   searchParams?: { q?: string };
 }) {
-  const baseProducts = await getCategoryProducts(params.handle, 24);
+  // unwrap the async params
+  const { handle } = await params;
 
-  if (!baseProducts.length) notFound();
+  const baseProducts = await getCategoryProducts(handle, 24);
+
+  if (!baseProducts.length) {
+    notFound();
+  }
 
   const q = (searchParams?.q || '').trim().toLowerCase();
   const filtered = q
@@ -32,7 +38,7 @@ export default async function CollectionPage({
         className="text-xl"
         style={{ fontWeight: 600, marginBottom: '0.5rem' }}
       >
-        {params.handle.replace('-', ' ').toUpperCase()}
+        {handle.replace('-', ' ').toUpperCase()}
       </h1>
 
       <PLPFilters />
