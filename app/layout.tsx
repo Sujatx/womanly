@@ -56,7 +56,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
         <footer>
           <div className="container footer" style={{ padding: '1rem' }}>
-            <small>© {new Date().getFullYear()} Womanly</small>
+            <small>© {new Date().getFullYear()} Made by Sujat</small>
           </div>
         </footer>
       </body>
