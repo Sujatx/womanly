@@ -29,11 +29,8 @@ womanly/
 │   │   ├── plp-client.tsx      # Client filters, sorting, grid
 │   │   └── loading.tsx         # Loading skeleton
 │   ├── products/[handle]/      # Product detail pages (PDP)
-│   │   ├── page.tsx            # Server entry
-│   │   └── loading.tsx         # Loading state
-│   └── api/checkout/           # Server API routes
-│       ├── shopify/route.ts    # Shopify checkout endpoint
-│       └── stripe/route.ts     # Stripe payment endpoint
+│       ├── page.tsx            # Server entry
+│       └── loading.tsx         # Loading state
 ├── components/                 # Reusable UI components
 │   ├── HeaderCart.tsx          # Cart icon + drawer trigger
 │   ├── HeaderSearch.tsx        # Inline search with live suggestions
@@ -54,8 +51,6 @@ womanly/
 │   ├── wishlist.ts             # Wishlist hook with localStorage
 │   ├── dummyjson.ts            # DummyJSON API client
 │   ├── plp-transform.ts        # PLP data transformers
-│   ├── shopify.ts              # Shopify SDK helpers (future)
-│   └── stripe.ts               # Stripe SDK helpers (future)
 ├── types/
 │   └── product.ts              # TypeScript interfaces
 ├── public/
@@ -135,11 +130,6 @@ womanly/
 
 3. **Configure environment variables**
    Create `.env.local` in the project root:
-   ```
-   # Optional: Add when ready to implement payments
-   # STRIPE_SECRET_KEY=sk_test_...
-   # SHOPIFY_STOREFRONT_TOKEN=...
-   # SHOPIFY_STORE_DOMAIN=yourstore.myshopify.com
    ```
 
 4. **Run development server**
