@@ -277,9 +277,6 @@ MIT License - feel free to use this project for learning or commercial purposes.
 
 ---
 
-**Built with ❤️ using Next.js 15 and TypeScript**
-```
+**Built by SUjat using Next.js 15 and TypeScript**
+**Live at** https://womanly-beryl.vercel.app/
 
-Copy this entire markdown block into a README.md file at your project root, commit it, and push to GitHub—it's ready to onboard contributors and serve as comprehensive documentation.[1]
-
-[1](https://nextjs.org/docs/app/api-reference/config/next-config-js)
