@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/23151182/README.md)
 # Womanly 🛍️
 
 Modern e-commerce platform built with Next.js 15, TypeScript, and DummyJSON API.
