@@ -6,8 +6,14 @@ import { notFound } from 'next/navigation';
 import PDPClient from '@/components/PDPClient';
 import { getProductById, toPDP } from '@/lib/dummyjson';
 
-export default async function ProductPage({ params }: { params: { handle: string } }) {
-  const id = Number(params.handle);
+export default async function ProductPage({ 
+  params 
+}: { 
+  params: Promise<{ handle: string }> 
+}) {
+  // Await params before using
+  const { handle } = await params;
+  const id = Number(handle);
 
   // If the URL segment isn't a finite number, trigger the 404 UI
   if (!Number.isFinite(id)) {
