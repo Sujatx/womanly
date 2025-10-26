@@ -4,17 +4,34 @@ import { getCategoryProducts, toCard } from '@/lib/dummyjson';
 import PLPFilters from '@/components/PLPFilters';
 import ClientPLP from './plp-client';
 
-export default async function CollectionPage(props: any) {
-  // Accept whatever Next gives (Promise or plain object) and await to normalize.
-  const { params, searchParams } = props;
-  const { handle } = await params;    // covers Promise<{handle}> and {handle}
-  const sp = await searchParams;      // handles undefined, object, or Promise<object>
+interface CollectionPageParams {
+  handle: string;
+}
+
+interface CollectionPageSearchParams {
+  q?: string;
+}
+
+interface CollectionPageProps {
+  params: Promise<CollectionPageParams>;      // ← Added Promise
+  searchParams?: Promise<CollectionPageSearchParams>;  // ← Added Promise
+}
+
+export default async function CollectionPage({
+  params,
+  searchParams,
+}: CollectionPageProps) {
+  // Await the params and searchParams
+  const { handle } = await params;
+  const resolvedSearchParams = await searchParams;
 
   const baseProducts = await getCategoryProducts(handle, 24);
 
-  if (!baseProducts.length) notFound();
+  if (!baseProducts.length) {
+    notFound();
+  }
 
-  const q = (sp?.q || '').toString().trim().toLowerCase();
+  const q = (resolvedSearchParams?.q || '').trim().toLowerCase();
   const filtered = q
     ? baseProducts.filter(
         (p) =>
@@ -27,7 +44,10 @@ export default async function CollectionPage(props: any) {
 
   return (
     <div>
-      <h1 className="text-xl" style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
+      <h1
+        className="text-xl"
+        style={{ fontWeight: 600, marginBottom: '0.5rem' }}
+      >
         {handle.replace('-', ' ').toUpperCase()}
       </h1>
 
