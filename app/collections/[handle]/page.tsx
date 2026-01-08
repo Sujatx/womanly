@@ -13,8 +13,8 @@ interface CollectionPageSearchParams {
 }
 
 interface CollectionPageProps {
-  params: Promise<CollectionPageParams>;      // ← Added Promise
-  searchParams?: Promise<CollectionPageSearchParams>;  // ← Added Promise
+  params: Promise<CollectionPageParams>;
+  searchParams?: Promise<CollectionPageSearchParams>;
 }
 
 export default async function CollectionPage({
@@ -48,7 +48,7 @@ export default async function CollectionPage({
         className="text-xl"
         style={{ fontWeight: 600, marginBottom: '0.5rem' }}
       >
-        {handle.replace('-', ' ').toUpperCase()}
+        {handle.replaceAll('-', ' ').toUpperCase()}
       </h1>
 
       <PLPFilters />
