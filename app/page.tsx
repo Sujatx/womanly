@@ -4,6 +4,8 @@
 import Link from 'next/link';
 import { getCategoryProducts, toCard } from '@/lib/dummyjson';
 import { ProductCard } from '@/components/ProductCard';
+import { LoginButton } from '@/components/LoginButton';
+
 
 export default async function Home() {
   // Fetch a small set for a fast LCP
@@ -21,7 +23,12 @@ export default async function Home() {
             'linear-gradient(135deg, rgba(17,17,17,.9), rgba(17,17,17,.6)), url(https://images.unsplash.com/photo-1520975693419-6349b6ee6e9f?q=80&w=1400&auto=format&fit=crop) center/cover',
           color: '#fff',
         }}
+
       >
+        <div style={{ marginTop: '1rem' }}>
+          <LoginButton />
+        </div>
+
         <div style={{ maxWidth: 880 }}>
           <h1 style={{ fontSize: '2rem', fontWeight: 700, lineHeight: 1.1 }}>
             New drops for the season
@@ -46,6 +53,7 @@ export default async function Home() {
         <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Shop by category</h2>
         <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: '0.75rem' }}>
           {[
+
             { href: '/collections/new-in', label: 'New In' },
             { href: '/collections/dresses', label: 'Dresses' },
             { href: '/collections/tops', label: 'Tops' },
