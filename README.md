@@ -57,12 +57,6 @@ components/              # UI components
 lib/                     # Hooks, API clients
 ```
 
-## Roadmap
-
-- [ ] Real checkout (Stripe/Shopify)
-- [ ] SEO metadata
-- [ ] Analytics integration
-- [ ] Mobile improvements
 
 ## License
 
