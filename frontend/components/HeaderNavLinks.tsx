@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const items = [
-  { href: '/collections/new-in', label: 'New In' },
-  { href: '/collections/dresses', label: 'Dresses' },
+  { href: '/collections/womens-dresses', label: 'Dresses' },
   { href: '/collections/tops', label: 'Tops' },
-  { href: '/collections/bottoms', label: 'Bottoms' },
-  { href: '/collections/sale', label: 'Sale' },
+  { href: '/collections/womens-bags', label: 'Bags' },
+  { href: '/collections/womens-shoes', label: 'Shoes' },
+  { href: '/collections/womens-jewellery', label: 'Jewelry' },
 ];
 
 export default function HeaderNavLinks() {

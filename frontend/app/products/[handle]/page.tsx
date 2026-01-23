@@ -4,7 +4,7 @@
 
 import { notFound } from 'next/navigation';
 import PDPClient from '@/components/PDPClient';
-import { getProductById, toPDP } from '@/lib/dummyjson';
+import { getProduct, toPDP } from '@/lib/api-client';
 
 export default async function ProductPage({ 
   params 
@@ -21,7 +21,7 @@ export default async function ProductPage({
   }
 
   try {
-    const product = await getProductById(id);
+    const product = await getProduct(id);
     const mapped = toPDP(product);
 
     return (

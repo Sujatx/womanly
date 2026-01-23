@@ -1,14 +1,21 @@
 # Womanly 🛍️
 
-Modern e-commerce platform built with Next.js 15, TypeScript, and DummyJSON API.
+Modern e-commerce platform built with Next.js 15 and FastAPI.
 
 **Live:** [womanly-beryl.vercel.app](https://womanly-beryl.vercel.app/)
 
 ## Tech Stack
 
+### Frontend
 - Next.js 15 (App Router), TypeScript
 - CSS Modules, localStorage sync
-- DummyJSON API (mock data)
+- Transitioning from DummyJSON to FastAPI backend
+
+### Backend (In Development)
+- FastAPI + PostgreSQL + SQLModel
+- Docker containerized
+- JWT authentication
+- Stripe payments integration
 
 ## Features
 

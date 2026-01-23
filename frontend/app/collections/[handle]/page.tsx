@@ -1,6 +1,6 @@
 // app/collections/[handle]/page.tsx
 import { notFound } from 'next/navigation';
-import { getCategoryProducts, toCard } from '@/lib/dummyjson';
+import { getProducts, toCard } from '@/lib/api-client';
 import PLPFilters from '@/components/PLPFilters';
 import ClientPLP from './plp-client';
 
@@ -24,23 +24,26 @@ export default async function CollectionPage({
   // Await the params and searchParams
   const { handle } = await params;
   const resolvedSearchParams = await searchParams;
+  const q = (resolvedSearchParams?.q || '').trim();
 
-  const baseProducts = await getCategoryProducts(handle, 24);
+  // In the real backend, 'handle' corresponds to 'category_slug'
+  // But our API expects 'category' param.
+  // We need to pass 'handle' as category.
+  
+  // Also, the backend handles 'q' natively.
+  const productData = await getProducts(1, 24, handle, q);
+  const products = productData.items;
 
-  if (!baseProducts.length) {
-    notFound();
+  // We don't throw 404 if empty list, just show empty state usually.
+  // But if that's the desired behavior:
+  if (!products.length && !q) {
+     // Only 404 if category truly empty? 
+     // For now, let's allow empty categories or handle in UI.
+     // But to keep parity:
+     // notFound(); 
   }
 
-  const q = (resolvedSearchParams?.q || '').trim().toLowerCase();
-  const filtered = q
-    ? baseProducts.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q)
-      )
-    : baseProducts;
-
-  const cards = filtered.map(toCard);
+  const cards = products.map(toCard);
 
   return (
     <div>

@@ -7,6 +7,7 @@ import HeaderSearch from '@/components/HeaderSearch';
 import HeaderWishlist from '@/components/HeaderWishlist';
 import { Inter } from 'next/font/google';
 import HeaderNavLinks from '@/components/HeaderNavLinks'; // new
+import UserMenu from '@/components/UserMenu';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               {/* moved into a client component that sets aria-current */}
               <HeaderNavLinks />
 
+              <UserMenu />
               <HeaderWishlist />
               <div style={{ marginLeft: '0.5rem' }}>
                 <HeaderCart />
