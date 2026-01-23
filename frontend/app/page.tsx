@@ -2,13 +2,15 @@
 // Home: hero + categories + featured products from DummyJSON.
 
 import Link from 'next/link';
-import { getCategoryProducts, toCard } from '@/lib/dummyjson';
+import { getProducts, toCard } from '@/lib/api-client';
 import { ProductCard } from '@/components/ProductCard';
 
 export default async function Home() {
   // Fetch a small set for a fast LCP
-  const featuredRaw = await getCategoryProducts('new-in', 8);
-  const featured = featuredRaw.map(toCard);
+  // We can pass 'womens-dresses' or similar as category if we want specific featured items
+  // Or just fetch latest. Let's fetch latest 8.
+  const featuredData = await getProducts(1, 8);
+  const featured = featuredData.items.map(toCard);
 
   return (
     <div className="space-y-8">
