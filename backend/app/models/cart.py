@@ -4,7 +4,7 @@ from sqlmodel import SQLModel, Field, Relationship
 from .product import Product
 
 class CartItemBase(SQLModel):
-    product_id: int
+    product_id: int = Field(foreign_key="product.id")
     quantity: int = 1
     selected_options: Optional[str] = None 
 

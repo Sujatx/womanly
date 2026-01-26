@@ -16,7 +16,8 @@ class Order(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id")
     status: str = "pending"
     total_amount: float
-    stripe_payment_intent_id: Optional[str] = None
+    razorpay_order_id: Optional[str] = None
+    razorpay_payment_id: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
     items: List[OrderItem] = Relationship(back_populates="order")
