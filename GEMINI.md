@@ -8,21 +8,29 @@
 - `backend/`: The FastAPI server.
 - `BACKEND_ROADMAP.md`: The implementation plan for the backend.
 
-### Current Status (Updated: 2026-01-23)
+### Current Status (Updated: 2026-01-26)
 **Backend:** ✅ Running in Docker
 - FastAPI server running at `http://localhost:8000`
-- PostgreSQL database initialized with schema
+- PostgreSQL database initialized and **seeded with 100 products**
 - API documentation available at `http://localhost:8000/docs`
-- Alembic migrations configured and applied
+- Auth, Cart, and Razorpay Payments implemented
+
+**Frontend:** ✅ Integrated with Backend
+- Migrated from DummyJSON to internal FastAPI
+- Auth flow (Signup/Login) working
+- Persistent server-side cart
+- Razorpay Checkout integrated
 
 **Completed Milestones:**
 1. ✅ Backend skeleton + Docker
-2. ✅ Database schema + migrations
+2. ✅ Database schema + migrations + Seeding
+3. ✅ Authentication system
+4. ✅ Cart & Wishlist backend sync
+5. ✅ Razorpay payment integration
 
 **Next Steps:**
-- Seed database with product data
-- Implement product APIs to replace DummyJSON
-- Build authentication system
+- Troubleshoot frontend connection issue (`localhost:3000`)
+- Hardening & production deployment (Gunicorn)
 
 ## Frontend (Next.js)
 Located in `frontend/`.
@@ -31,8 +39,9 @@ Located in `frontend/`.
 - **Framework:** Next.js 15 (App Router)
 - **Language:** TypeScript
 - **Styling:** CSS Modules & Global CSS
-- **State Management:** `localStorage` (migrating to backend)
-- **Data Source:** DummyJSON API (migrating to backend)
+- **State Management:** Server-side via FastAPI (Cart synced to user)
+- **Payments:** Razorpay Checkout SDK
+- **Data Source:** FastAPI Backend (formerly DummyJSON)
 
 ### Key Files (Frontend)
 - `frontend/app/layout.tsx`: Root shell.
@@ -77,9 +86,9 @@ Run these commands from inside the `frontend/` directory:
 *   **OAuth:** Google login (optional path, same JWT issued)
 
 ### Payments
-*   **Provider:** Stripe
-*   **Flow:** Payment Intents + Webhooks
-*   **Verification:** Backend-only
+*   **Provider:** Razorpay
+*   **Flow:** Orders + Signature Verification
+*   **Verification:** Backend-only (Signature)
 
 ### Infrastructure
 *   **Containerization:** Docker

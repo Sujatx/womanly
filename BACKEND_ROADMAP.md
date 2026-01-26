@@ -25,22 +25,24 @@ This document outlines the step-by-step plan to migrate Womanly from a frontend-
     - [x] `GET /products` (with pagination/filtering)
     - [x] `GET /products/{id}`
     - [x] `GET /categories`
+- [x] Seeded database with 100 products from DummyJSON.
 
-**Status:** ✅ **COMPLETED** - Database schema applied, ready for data seeding
-**Next:** Seed database with product data from DummyJSON
+**Status:** ✅ **COMPLETED**
 
-## Phase 3: Authentication (The "User" Layer)
+## Phase 3: Authentication (The "User" Layer) ✅
 **Goal:** Allow users to register and log in.
 - [x] Define `User` model.
 - [x] Setup `passlib` for password hashing (bcrypt).
 - [x] Setup `python-jose` for JWT generation/validation.
 - [x] Implement Auth APIs:
     - [x] `POST /auth/signup`
-    - [x] `POST /auth/login` (returns Access + Refresh tokens)
+    - [x] `POST /auth/login` (returns Access token)
     - [x] `GET /auth/me` (Protected route test)
 - [x] Create `get_current_user` dependency for route protection.
 
-## Phase 4: Cart & Wishlist (The "State" Layer)
+**Status:** ✅ **COMPLETED**
+
+## Phase 4: Cart & Wishlist (The "State" Layer) ✅
 **Goal:** Move cart state from `localStorage` to PostgreSQL.
 - [x] Define `Cart` and `CartItem` models.
 - [x] Define `Wishlist` and `WishlistItem` models.
@@ -50,24 +52,30 @@ This document outlines the step-by-step plan to migrate Womanly from a frontend-
     - [x] `DELETE /cart/items/{id}`
 - [ ] Implement "Merge" logic: When an anonymous user logs in, merge their session cart with their DB cart. *(Deferred)*
 
-## Phase 5: Orders & Payments (The "Transactional" Layer)
-**Goal:** Process real payments via Stripe.
-- [x] Define `Order` and `OrderItem` models.
-- [x] Set up Stripe Python SDK.
-- [x] Implement Checkout APIs:
-    - [x] `POST /checkout/intent` (Calculates total on server, creates Stripe PaymentIntent)
-- [x] Implement Webhook:
-    - [x] `POST /webhooks/stripe` (Listens for `payment_intent.succeeded`)
-    - [x] Logic to move Cart -> Order and clear Cart.
+**Status:** ✅ **COMPLETED** (Server-side cart active)
 
-## Phase 6: Frontend Integration
+## Phase 5: Orders & Payments (The "Transactional" Layer) ✅
+**Goal:** Process real payments via Razorpay.
+- [x] Define `Order` and `OrderItem` models (updated for Razorpay).
+- [x] Set up Razorpay Python SDK.
+- [x] Implement Checkout APIs:
+    - [x] `POST /payments/create-order` (Creates Razorpay order)
+    - [x] `POST /payments/verify` (Verifies Razorpay payment signature)
+
+**Status:** ✅ **COMPLETED** (Razorpay integrated)
+
+## Phase 6: Frontend Integration ✅
 **Goal:** Connect the Next.js frontend to the new Backend APIs.
 - [x] Create a `lib/api-client.ts` in Next.js to replace `lib/dummyjson.ts` calls.
 - [x] Update `app/page.tsx` and product pages to use the new client.
-- [x] Create a Sign Up / Login UI form.
-- [x] Refactor `CartDrawer` to fetch from API instead of reading `localStorage`. *(Partially done - UserMenu added, Cart needs refactor)*
+- [x] Create a Sign Up / Login UI form at `/auth`.
+- [x] Refactor `CartDrawer` to fetch from API instead of reading `localStorage`.
+- [x] Integrate Razorpay checkout in `CheckoutButtons`.
+
+**Status:** ✅ **COMPLETED**
 
 ## Phase 7: Deployment & Cleanup
 - [x] Remove `lib/dummyjson.ts`.
 - [ ] Configure `gunicorn` for production serving.
 - [ ] Finalize `Dockerfile` for production (multi-stage build).
+- [ ] Resolve frontend `ERR_CONNECTION_REFUSED` (Check if `npm run dev` is still running or blocked).
