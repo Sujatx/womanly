@@ -17,3 +17,8 @@ class UserCreate(UserBase):
 
 class UserRead(UserBase):
     id: int
+
+class Token(SQLModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserRead

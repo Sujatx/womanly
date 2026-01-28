@@ -26,6 +26,7 @@ export default async function ProductPage({
 
     return (
       <PDPClient
+        id={mapped.id}
         title={mapped.title}
         description={mapped.description}
         images={mapped.images}

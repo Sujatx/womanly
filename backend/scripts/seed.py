@@ -16,8 +16,9 @@ def slugify(text: str) -> str:
 def seed():
     print("Fetching data from DummyJSON...")
     url = "https://dummyjson.com/products?limit=100"
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
     try:
-        with urllib.request.urlopen(url) as response:
+        with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
             products_data = data['products']
     except Exception as e:

@@ -4,6 +4,8 @@
 import Link from 'next/link';
 import { useWishlist } from '@/lib/wishlist';
 import * as React from 'react';
+import { Heart } from 'lucide-react';
+import { toast } from 'sonner';
 
 type Img = { url: string; altText?: string };
 type Money = { amount: string; currencyCode: string };
@@ -177,30 +179,30 @@ export function ProductCard({ product }: { product: Product }) {
             price: Number(product.price.amount),
             currencyCode: product.price.currencyCode,
           });
-          try {
-            window.dispatchEvent(new CustomEvent('wishlist:update'));
-            window.dispatchEvent(new CustomEvent('wishlist:open'));
-          } catch {}
+          if (inWL) {
+            toast.info('Removed from wishlist');
+          } else {
+            toast.success('Added to wishlist');
+          }
         }}
         className="wishlist-btn"
         style={{
           position: 'absolute',
           top: 10,
           right: 10,
-          width: 40,
-          height: 40,
-          borderRadius: 999,
-          background: 'rgba(255,255,255,0.9)',
-          border: '1px solid var(--border)',
+          width: 36,
+          height: 36,
+          borderRadius: '50%',
+          background: '#fff',
+          border: '1px solid #eee',
           display: 'grid',
           placeItems: 'center',
-          boxShadow: 'var(--shadow-sm)',
-          transition: 'transform var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
         }}
       >
-        <span aria-hidden="true" style={{ fontSize: 18, lineHeight: 1 }}>
-          {inWL ? '❤' : '♡'}
-        </span>
+        <Heart size={18} fill={inWL ? "#111" : "none"} strokeWidth={inWL ? 0 : 2} style={{ color: inWL ? '#111' : '#666' }} />
       </button>
     </div>
   );
