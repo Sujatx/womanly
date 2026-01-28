@@ -1,74 +1,22 @@
-# Womanly 🛍️
+# Womanly Frontend
 
-Modern e-commerce platform built with Next.js 15 and FastAPI.
-
-**Live:** [womanly-beryl.vercel.app](https://womanly-beryl.vercel.app/)
-
-## Tech Stack
-
-### Frontend
-- Next.js 15 (App Router), TypeScript
-- CSS Modules, localStorage sync
-- Transitioning from DummyJSON to FastAPI backend
-
-### Backend (In Development)
-- FastAPI + PostgreSQL + SQLModel
-- Docker containerized
-- JWT authentication
-- Stripe payments integration
+Next.js 15 application for the Womanly e-commerce store.
 
 ## Features
+*   **App Router:** Utilizing the latest Next.js features.
+*   **Client Components:** Interactive Cart, Wishlist, and Checkout drawers.
+*   **State Management:** React Context for Auth, Custom Hooks for Cart.
+*   **Styling:** CSS Modules with global variables.
 
-- **Cart & Wishlist:** Persistent, cross-tab sync
-- **Inline Search:** Debounced live suggestions
-- **Product Pages:** Variant selection, image gallery, similar products
-- **Listing Pages:** Filters, sorting, responsive grid
-
-## Setup
-
+## Development
 ```bash
-git clone https://github.com/yourusername/womanly.git
-cd womanly
 npm install
 npm run dev
 ```
 
-Open [localhost:3000](http://localhost:3000)
-
-## Configuration
-
-Add to `next.config.js`:
-
-```js
-module.exports = {
-  images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: 'cdn.dummyjson.com', pathname: '/**' },
-      { protocol: 'https', hostname: 'i.dummyjson.com', pathname: '/**' },
-    ],
-  },
-};
+## Environment Variables
+Create `.env.local`:
+```env
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+NEXT_PUBLIC_RAZORPAY_KEY_ID=your_razorpay_key_id
 ```
-
-Restart dev server after changes.
-
-## Structure
-
-```
-app/
-├── layout.tsx           # Global shell
-├── page.tsx             # Homepage
-├── collections/[handle] # Product listings
-└── products/[handle]    # Product details
-components/              # UI components
-lib/                     # Hooks, API clients
-```
-
-
-## License
-
-MIT- free for personal, learning, commercial use.
-
----
-
-Built by Sujat

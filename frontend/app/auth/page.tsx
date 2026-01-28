@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -9,59 +9,17 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
-  const router = useRouter();
+  const { login, signup } = useAuth();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
 
-    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
-    // We'll proxy through Next.js API routes or hit backend directly?
-    // Let's hit backend directly for now, but usually we want to store cookie.
-    // For this MVP, let's store token in localStorage to match existing pattern.
-    
-    // Wait, CORS might be issue if hitting localhost:8000 directly from browser.
-    // Backend CORS middleware is needed.
-    // Assuming backend will have CORS allowed for frontend.
-    
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    
     try {
-      let res;
       if (isLogin) {
-        // Login expects form data
-        const formData = new URLSearchParams();
-        formData.append('username', email);
-        formData.append('password', password);
-        
-        res = await fetch(`${API_URL}/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: formData,
-        });
+        await login(email, password);
       } else {
-        // Signup expects JSON
-        res = await fetch(`${API_URL}/auth/signup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, full_name: fullName }),
-        });
-      }
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || 'Authentication failed');
-      }
-
-      if (isLogin) {
-        const data = await res.json();
-        localStorage.setItem('token', data.access_token);
-        // Refresh page or push to home
-        router.push('/');
-      } else {
-        // After signup, switch to login or auto-login
-        setIsLogin(true);
-        setError('Account created! Please log in.');
+        await signup(email, password, fullName);
       }
     } catch (err: any) {
       setError(err.message);

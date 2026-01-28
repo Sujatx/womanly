@@ -1,5 +1,7 @@
+from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
+from sqlalchemy.orm import selectinload
 from app.db import get_session
 from app.models import Cart, Order, OrderItem, User
 from app.deps import get_current_user
@@ -115,3 +117,16 @@ def verify_payment(
     session.commit()
     
     return {"status": "success", "order_id": order.id}
+
+@router.get("/orders/me", response_model=List[Order])
+def get_my_orders(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    statement = (
+        select(Order)
+        .where(Order.user_id == current_user.id)
+        .order_by(Order.created_at.desc())
+        .options(selectinload(Order.items))
+    )
+    return session.exec(statement).all()

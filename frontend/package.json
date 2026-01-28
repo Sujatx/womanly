@@ -7,13 +7,15 @@
     "start": "next start"
   },
   "dependencies": {
+    "lucide-react": "^0.563.0",
     "next": "15.5.8",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "sonner": "^2.0.7"
   },
   "devDependencies": {
-    "typescript": "latest",
+    "@types/node": "latest",
     "@types/react": "latest",
-    "@types/node": "latest"
+    "typescript": "latest"
   }
 }

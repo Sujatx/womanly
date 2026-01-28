@@ -10,6 +10,8 @@ import { SizeGuideModal } from '@/components/SizeGuideModal';
 import { DeliveryReturns } from '@/components/DeliveryReturns';
 import { CheckoutButtons } from '@/components/CheckoutButtons';
 import { useCart } from '@/lib/cart';
+import { toast } from 'sonner';
+import { ShoppingBag, Ruler, Check } from 'lucide-react';
 
 type Money = { amount: string; currencyCode: string };
 type Variant = {
@@ -21,6 +23,7 @@ type Variant = {
 };
 
 export default function PDPClient({
+  id,
   title,
   description,
   images,
@@ -28,6 +31,7 @@ export default function PDPClient({
   variants,
   tags,
 }: {
+  id: number;
   title: string;
   description: string;
   images: { url: string; altText?: string }[];
@@ -83,7 +87,8 @@ export default function PDPClient({
 
   function onAdd() {
     add({
-      id: activeVariant.id,
+      id: String(id), // Use actual product ID
+      productId: String(id), // Ensure productId is set for local/sync logic
       title,
       price: Number(activeVariant.price.amount),
       currencyCode: activeVariant.price.currencyCode || 'USD',
@@ -91,9 +96,15 @@ export default function PDPClient({
       image: images?.[0],
       selectedOptions: activeVariant.selectedOptions,
     });
+    toast.success('Added to cart', {
+      description: `${title} - ${activeVariant.title}`,
+      action: {
+        label: 'View Cart',
+        onClick: () => window.dispatchEvent(new CustomEvent('cart:open'))
+      }
+    });
     setJustAdded(true);
-    setTimeout(() => setJustAdded(false), 1200);
-    try { window.dispatchEvent(new CustomEvent('cart:open')); } catch {}
+    setTimeout(() => setJustAdded(false), 2000);
   }
 
   return (
@@ -115,11 +126,11 @@ export default function PDPClient({
 
         {/* RIGHT: Details + options + actions (beside the main image) */}
         <section style={{ minWidth: 0 }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{title}</h1>
-          <p style={{ marginTop: '.25rem', fontSize: '1.1rem' }}>{priceText}</p>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>{title}</h1>
+          <p style={{ marginTop: '.25rem', fontSize: '1.25rem', fontWeight: 600 }}>{priceText}</p>
 
           {/* Size/Color/etc. options */}
-          <div style={{ marginTop: '1rem' }}>
+          <div style={{ marginTop: '2rem' }}>
             <VariantSelector
               options={options}
               selected={selected}
@@ -129,46 +140,81 @@ export default function PDPClient({
           </div>
 
           {/* Size guide */}
-          <div style={{ marginTop: '.5rem' }}>
+          <div style={{ marginTop: '1rem' }}>
             <button
               type="button"
               onClick={() => setSizeGuideOpen(true)}
-              className="rounded"
-              style={{ background: '#f2f2f2', padding: '.4rem .75rem', border: '1px solid #ddd' }}
+              style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'none',
+                padding: '0',
+                border: 'none',
+                textDecoration: 'underline',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                color: '#666'
+              }}
             >
+              <Ruler size={16} />
               Size Guide
             </button>
           </div>
 
           {/* Buy/Add to cart */}
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ marginTop: '2rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <button
               type="button"
               onClick={onAdd}
-              className="rounded"
-              style={{ border: '1px solid #ddd', padding: '.5rem .75rem', background: '#fff', cursor: 'pointer' }}
+              disabled={justAdded}
+              style={{ 
+                flex: 1,
+                minWidth: '200px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.75rem',
+                borderRadius: '12px', 
+                padding: '1rem', 
+                background: justAdded ? '#f0f0f0' : '#fff', 
+                border: '1px solid #111',
+                color: '#111',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => !justAdded && (e.currentTarget.style.background = '#f9f9f9')}
+              onMouseLeave={(e) => !justAdded && (e.currentTarget.style.background = '#fff')}
             >
-              Add to cart
+              {justAdded ? (
+                <>
+                  <Check size={18} />
+                  Added to bag
+                </>
+              ) : (
+                <>
+                  <ShoppingBag size={18} />
+                  Add to bag
+                </>
+              )}
             </button>
 
-            <CheckoutButtons merchandiseId={activeVariant?.id} />
-
-            {justAdded && (
-              <span aria-live="polite" className="muted" style={{ marginLeft: '.25rem', fontSize: 12 }}>
-                Added
-              </span>
-            )}
+            <div style={{ flex: 1, minWidth: '200px' }}>
+              <CheckoutButtons merchandiseId={activeVariant?.id} />
+            </div>
           </div>
 
           {/* Delivery & Returns */}
-          <div style={{ marginTop: '.75rem' }}>
+          <div style={{ marginTop: '2rem' }}>
             <DeliveryReturns />
           </div>
 
           {/* Details */}
-          <div style={{ marginTop: '1.25rem' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Details</h3>
-            <p className="muted" style={{ marginTop: '.25rem' }}>{description}</p>
+          <div style={{ marginTop: '2.5rem', borderTop: '1px solid #f0f0f0', paddingTop: '1.5rem' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem' }}>Description</h3>
+            <p style={{ fontSize: '0.95rem', color: '#444', lineHeight: 1.6 }}>{description}</p>
           </div>
         </section>
       </div>
