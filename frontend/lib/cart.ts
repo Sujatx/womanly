@@ -5,7 +5,8 @@ import { getCart, addToCart, removeFromCart as apiRemoveFromCart, Cart, CartItem
 import { useAuth } from './auth-context';
 
 export type CartLine = {
-  id: string; 
+  id: string; // This is the CartItem.id (backend) or unique key (local)
+  variantId: string;
   productId: string;
   title: string;
   price: number;
@@ -15,7 +16,7 @@ export type CartLine = {
   selectedOptions?: { name: string; value: string }[];
 };
 
-const KEY = 'cart_v1';
+const KEY = 'cart_v2'; // Bump version for variant support
 const EVT = 'cart:update';
 
 function readLocalCart(): CartLine[] {
@@ -39,15 +40,27 @@ function writeLocalCart(lines: CartLine[]) {
 }
 
 function mapApiCartToLines(apiCart: Cart): CartLine[] {
-    return apiCart.items.map(item => ({
-        id: String(item.id),
-        productId: String(item.product_id),
-        title: item.product?.title || 'Product',
-        price: item.product?.price || 0,
-        currencyCode: 'USD',
-        qty: item.quantity,
-        image: item.product?.images?.[0] ? { url: item.product.images[0] } : undefined,
-    }));
+    return apiCart.items.map(item => {
+        const product = item.variant?.product;
+        const variant = item.variant;
+        const price = (product?.price || 0) + (variant?.price_adjustment || 0);
+        
+        const options = [];
+        if (variant?.size) options.push({ name: 'Size', value: variant.size });
+        if (variant?.color) options.push({ name: 'Color', value: variant.color });
+
+        return {
+            id: String(item.id),
+            variantId: String(item.variant_id),
+            productId: String(product?.id || ''),
+            title: product?.title || 'Product',
+            price: price,
+            currencyCode: 'USD',
+            qty: item.quantity,
+            image: product?.thumbnail ? { url: product.thumbnail } : undefined,
+            selectedOptions: options
+        };
+    });
 }
 
 export function formatMoney(amount: number, currencyCode: string, locale = 'en-US') {
@@ -98,7 +111,7 @@ export function useCart() {
   async function add(line: CartLine) {
     if (isAuth) {
         try {
-            const newCart = await addToCart(Number(line.id), line.qty); 
+            const newCart = await addToCart(Number(line.variantId), line.qty); 
             setLines(mapApiCartToLines(newCart));
         } catch (e) {
             console.error(e);
@@ -106,9 +119,9 @@ export function useCart() {
     } else {
         setLines(prev => {
             const next = [...prev];
-            const i = next.findIndex(l => l.productId === line.id);
+            const i = next.findIndex(l => l.variantId === line.variantId);
             if (i >= 0) next[i] = { ...next[i], qty: next[i].qty + line.qty };
-            else next.push({ ...line, productId: line.id });
+            else next.push({ ...line });
             writeLocalCart(next);
             return next;
         });
@@ -125,7 +138,7 @@ export function useCart() {
         }
     } else {
         setLines(prev => {
-            const next = prev.filter(l => l.id !== id && l.productId !== id); 
+            const next = prev.filter(l => l.id !== id && l.variantId !== id); 
             writeLocalCart(next);
             return next;
         });
@@ -135,7 +148,7 @@ export function useCart() {
   function setQty(id: string, qty: number) {
       if (!isAuth) {
         setLines(prev => {
-            const next = prev.map(l => (l.id === id ? { ...l, qty } : l)).filter(l => l.qty > 0);
+            const next = prev.map(l => (l.variantId === id || l.id === id ? { ...l, qty } : l)).filter(l => l.qty > 0);
             writeLocalCart(next);
             return next;
         });
@@ -144,7 +157,7 @@ export function useCart() {
 
   function clear() {
     if (isAuth) {
-        // API clear not yet implemented, usually happens on checkout
+        // API clear not yet implemented
     } else {
         setLines(() => {
             writeLocalCart([]);

@@ -26,43 +26,53 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.variable} style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column', fontFamily: 'var(--font-sans)' }}>
+      <body className={inter.variable} style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column', background: 'var(--bg)' }}>
         <AuthProvider>
           <Toaster position="top-center" richColors />
           <a href="#main" className="sr-only">Skip to content</a>
 
-          <header role="banner" /* glass is handled in CSS */>
-            <div className="container header">
-              <Link href="/" className="brand" aria-label="Go to homepage" style={{ fontWeight: 700, letterSpacing: '.2px' }}>
-                Womanly
-              </Link>
+          <header role="banner">
+            <div className="container header-inner">
+              {/* Left Pill: Nav Links */}
+              <nav aria-label="Primary Left" className="nav-pill">
+                <HeaderNavLinks />
+              </nav>
 
-              <nav aria-label="Primary" className="nav" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1 }}>
-                <div style={{ flex: 1, maxWidth: 520 }}>
+              {/* Center: Brand Notch */}
+              <div className="notch-container">
+                <Link href="/" className="brand" aria-label="Go to homepage">
+                  Womanly
+                </Link>
+              </div>
+
+              {/* Right Pill: Actions */}
+              <div className="nav-pill">
+                <div style={{ width: 180 }}>
                   <HeaderSearch />
                 </div>
-
-                {/* moved into a client component that sets aria-current */}
-                <HeaderNavLinks />
-
                 <UserMenu />
                 <HeaderWishlist />
-                <div style={{ marginLeft: '0.5rem' }}>
-                  <HeaderCart />
-                </div>
-              </nav>
+                <HeaderCart />
+              </div>
             </div>
           </header>
 
-          <main id="main" style={{ flex: 1 }}>
-            <div className="container" /* relies on CSS for max-width + centering */ style={{ padding: '1rem' }}>
+          <main id="main" style={{ flex: 1, paddingTop: '7rem' }}>
+            <div className="container">
               {children}
             </div>
           </main>
 
           <footer>
-            <div className="container footer" style={{ padding: '1rem' }}>
-              <small>© {new Date().getFullYear()} Made by Sujat</small>
+            <div className="container footer">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <small>© {new Date().getFullYear()} WOMANLY. PREMISES OF HIGH FASHION.</small>
+                <div style={{ display: 'flex', gap: '2rem', fontSize: '0.8rem', fontWeight: 600 }}>
+                  <Link href="/privacy">PRIVACY</Link>
+                  <Link href="/terms">TERMS</Link>
+                  <Link href="/shipping">SHIPPING</Link>
+                </div>
+              </div>
             </div>
           </footer>
         </AuthProvider>

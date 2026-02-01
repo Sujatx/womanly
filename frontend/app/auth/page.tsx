@@ -27,73 +27,100 @@ export default function AuthPage() {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: '4rem auto', padding: '2rem', border: '1px solid #eee', borderRadius: 8 }}>
-      <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', textAlign: 'center' }}>
-        {isLogin ? 'Welcome Back' : 'Create Account'}
-      </h1>
+    <div style={{ minHeight: '80vh', display: 'grid', placeItems: 'center', position: 'relative', overflow: 'hidden', padding: '2rem' }}>
+      <div className="bg-text" style={{ fontSize: '20vw' }}>{isLogin ? 'LOGIN' : 'JOIN'}</div>
+      
+      <div className="card" style={{ 
+        width: '100%', 
+        maxWidth: '450px', 
+        padding: '3.5rem', 
+        borderRadius: 'var(--radius-lg)', 
+        position: 'relative', 
+        zIndex: 1,
+        background: 'rgba(255,255,255,0.4)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid var(--border)'
+      }}>
+        <header style={{ marginBottom: '3rem', textAlign: 'center' }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: '0.5rem' }}>
+            {isLogin ? 'WELCOME BACK' : 'BECOME A MEMBER'}
+          </h1>
+          <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--muted)', letterSpacing: '0.05em' }}>
+            {isLogin ? 'ENTER YOUR DETAILS TO ACCESS YOUR BAG' : 'CREATE YOUR ACCOUNT FOR A PREMIUM EXPERIENCE'}
+          </p>
+        </header>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {!isLogin && (
-           <label>
-             <span style={{ display: 'block', marginBottom: '.5rem', fontSize: '0.875rem' }}>Full Name</span>
-             <input
-               type="text"
-               required
-               value={fullName}
-               onChange={(e) => setFullName(e.target.value)}
-               style={{ width: '100%', padding: '.75rem', border: '1px solid #ddd', borderRadius: 4 }}
-             />
-           </label>
-        )}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {!isLogin && (
+             <div>
+               <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 900, color: 'var(--muted)', marginBottom: '0.5rem' }}>FULL NAME</label>
+               <input
+                 type="text"
+                 required
+                 value={fullName}
+                 onChange={(e) => setFullName(e.target.value)}
+                 className="card"
+                 style={{ width: '100%', padding: '1.25rem', background: 'white', borderRadius: 'var(--radius-sm)' }}
+               />
+             </div>
+          )}
 
-        <label>
-          <span style={{ display: 'block', marginBottom: '.5rem', fontSize: '0.875rem' }}>Email</span>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{ width: '100%', padding: '.75rem', border: '1px solid #ddd', borderRadius: 4 }}
-          />
-        </label>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 900, color: 'var(--muted)', marginBottom: '0.5rem' }}>EMAIL ADDRESS</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="card"
+              style={{ width: '100%', padding: '1.25rem', background: 'white', borderRadius: 'var(--radius-sm)' }}
+            />
+          </div>
 
-        <label>
-          <span style={{ display: 'block', marginBottom: '.5rem', fontSize: '0.875rem' }}>Password</span>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ width: '100%', padding: '.75rem', border: '1px solid #ddd', borderRadius: 4 }}
-          />
-        </label>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 900, color: 'var(--muted)', marginBottom: '0.5rem' }}>PASSWORD</label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="card"
+              style={{ width: '100%', padding: '1.25rem', background: 'white', borderRadius: 'var(--radius-sm)' }}
+            />
+          </div>
 
-        {error && <p style={{ color: 'red', fontSize: '0.875rem' }}>{error}</p>}
+          {error && (
+            <div style={{ background: '#fef2f2', color: '#ef4444', padding: '1rem', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', fontWeight: 800, border: '1px solid #fee2e2' }}>
+              {error.toUpperCase()}
+            </div>
+          )}
 
-        <button
-          type="submit"
-          style={{
-            marginTop: '1rem',
-            padding: '.75rem',
-            background: '#111',
-            color: '#fff',
-            borderRadius: 4,
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}
-        >
-          {isLogin ? 'Log In' : 'Sign Up'}
-        </button>
-      </form>
+          <button
+            type="submit"
+            className="vexo-button"
+            style={{ width: '100%', height: '64px', marginTop: '1rem' }}
+          >
+            {isLogin ? 'LOG IN' : 'SIGN UP'}
+          </button>
+        </form>
 
-      <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.875rem' }}>
-        {isLogin ? "Don't have an account? " : "Already have an account? "}
-        <button
-          onClick={() => { setIsLogin(!isLogin); setError(''); }}
-          style={{ background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', padding: 0 }}
-        >
-          {isLogin ? 'Sign up' : 'Log in'}
-        </button>
+        <div style={{ marginTop: '2.5rem', textAlign: 'center' }}>
+          <button
+            onClick={() => { setIsLogin(!isLogin); setError(''); }}
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              fontSize: '0.75rem', 
+              fontWeight: 900, 
+              color: 'var(--fg)', 
+              textDecoration: 'underline', 
+              cursor: 'pointer', 
+              letterSpacing: '0.05em' 
+            }}
+          >
+            {isLogin ? 'DON’T HAVE AN ACCOUNT? JOIN US' : 'ALREADY A MEMBER? LOG IN'}
+          </button>
+        </div>
       </div>
     </div>
   );

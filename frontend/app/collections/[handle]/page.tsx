@@ -18,45 +18,65 @@ interface CollectionPageProps {
 }
 
 export default async function CollectionPage({
+
   params,
+
   searchParams,
+
 }: CollectionPageProps) {
-  // Await the params and searchParams
+
   const { handle } = await params;
+
   const resolvedSearchParams = await searchParams;
+
   const q = (resolvedSearchParams?.q || '').trim();
 
-  // In the real backend, 'handle' corresponds to 'category_slug'
-  // But our API expects 'category' param.
-  // We need to pass 'handle' as category.
-  
-  // Also, the backend handles 'q' natively.
-  const productData = await getProducts(1, 24, handle, q);
-  const products = productData.items;
 
-  // We don't throw 404 if empty list, just show empty state usually.
-  // But if that's the desired behavior:
-  if (!products.length && !q) {
-     // Only 404 if category truly empty? 
-     // For now, let's allow empty categories or handle in UI.
-     // But to keep parity:
-     // notFound(); 
-  }
+
+  const productData = await getProducts(1, 24, handle, q);
+
+  const products = productData.items;
 
   const cards = products.map(toCard);
 
+
+
   return (
-    <div>
-      <h1
-        className="text-xl"
-        style={{ fontWeight: 600, marginBottom: '0.5rem' }}
-      >
-        {handle.replaceAll('-', ' ').toUpperCase()}
-      </h1>
 
-      <PLPFilters />
+    <div style={{ paddingBottom: '10rem' }}>
 
-      <ClientPLP cards={cards} />
+      <div className="bg-text" style={{ top: '10%' }}>{handle.toUpperCase()}</div>
+
+      
+
+      <header style={{ textAlign: 'center', marginBottom: '6rem', position: 'relative', zIndex: 1 }}>
+
+        <span className="collection-tag" style={{ color: 'var(--muted)' }}>CURATED SELECTION</span>
+
+        <h1 style={{ fontSize: '4rem', fontWeight: 900, margin: '1rem 0' }}>{handle.replaceAll('-', ' ')}</h1>
+
+        <p style={{ fontWeight: 800, color: 'var(--muted)', fontSize: '0.9rem' }}>DISCOVER THE LATEST PIECES FROM OUR {handle.toUpperCase()} CATEGORY</p>
+
+      </header>
+
+
+
+      <div className="container" style={{ position: 'relative', zIndex: 1 }}>
+
+        <div style={{ marginBottom: '3rem', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', padding: '1rem 0' }}>
+
+          <PLPFilters />
+
+        </div>
+
+
+
+        <ClientPLP cards={cards} />
+
+      </div>
+
     </div>
+
   );
+
 }

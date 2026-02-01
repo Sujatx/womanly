@@ -28,9 +28,12 @@ export default function WishlistDrawer({ open, onClose }: Props) {
   if (!open) return null;
 
   function handleMoveToCart(item: any) {
+    // For wishlist items, we might not have a variantId saved if it was a generic "add to wishlist"
+    // But since our ProductCard now saves the full item, let's assume it has it or use productId as fallback
     addToCart({
-      id: item.id,
-      productId: item.id,
+      id: item.id, // This is handle/id
+      variantId: item.variantId || item.id,
+      productId: item.productId || item.id,
       title: item.title,
       price: item.price || 0,
       currencyCode: item.currencyCode || 'USD',
@@ -38,7 +41,7 @@ export default function WishlistDrawer({ open, onClose }: Props) {
       image: item.image
     });
     remove(item.id);
-    toast.success('Moved to cart');
+    toast.success('ITEM MOVED TO BAG');
   }
 
   return (
@@ -48,8 +51,8 @@ export default function WishlistDrawer({ open, onClose }: Props) {
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.2)',
-          backdropFilter: 'blur(4px)',
+          background: 'rgba(15, 23, 42, 0.3)',
+          backdropFilter: 'blur(12px)',
           zIndex: 9998,
         }}
       />
@@ -59,43 +62,44 @@ export default function WishlistDrawer({ open, onClose }: Props) {
         aria-modal="true"
         style={{
           position: 'fixed',
-          top: 0,
-          right: 0,
-          width: '100%',
-          maxWidth: '480px',
-          height: '100vh',
-          background: 'white',
+          top: '1rem',
+          right: '1rem',
+          bottom: '1rem',
+          width: 'calc(100% - 2rem)',
+          maxWidth: '500px',
+          background: 'var(--bg)',
           zIndex: 9999,
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '-10px 0 40px rgba(0,0,0,0.1)',
+          boxShadow: 'var(--shadow-md)',
+          borderRadius: 'var(--radius-lg)',
           overflow: 'hidden',
+          border: '1px solid var(--border)'
         }}
       >
         {/* Header */}
         <div style={{ 
-          padding: '1.5rem', 
-          borderBottom: '1px solid #f0f0f0',
+          padding: '2rem', 
+          borderBottom: '1px solid var(--border)',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center'
+          alignItems: 'center',
+          background: 'rgba(255,255,255,0.2)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Heart size={20} fill="#111" />
-            <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, letterSpacing: '-0.01em' }}>
-              Wishlist ({items.length})
-            </h2>
-          </div>
+          <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, letterSpacing: '0.05em' }}>
+            WISHLIST / {items.length}
+          </h2>
           <button
             onClick={onClose}
-            style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '0.5rem', color: '#666' }}
+            className="vexo-button vexo-button-outline"
+            style={{ width: '40px', height: '40px', padding: 0, borderRadius: '50%', display: 'grid', placeItems: 'center' }}
           >
-            <X size={24} />
+            <X size={20} />
           </button>
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '2rem' }}>
           {items.length === 0 ? (
             <div style={{
               display: 'flex',
@@ -103,81 +107,47 @@ export default function WishlistDrawer({ open, onClose }: Props) {
               alignItems: 'center',
               justifyContent: 'center',
               height: '100%',
-              gap: '1rem',
-              color: '#999'
+              gap: '2rem',
+              color: 'var(--muted)'
             }}>
-              <Heart size={48} strokeWidth={1} />
-              <p style={{ margin: 0, fontSize: '0.95rem' }}>Your wishlist is empty</p>
+              <Heart size={64} strokeWidth={1} />
+              <p style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>YOUR WISHLIST IS EMPTY</p>
               <button 
                 onClick={onClose}
-                style={{ 
-                  marginTop: '0.5rem',
-                  padding: '0.6rem 1.2rem',
-                  background: '#111',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '20px',
-                  fontSize: '0.875rem',
-                  cursor: 'pointer'
-                }}
+                className="vexo-button"
               >
-                Explore Products
+                BROWSE COLLECTIONS
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
               {items.map((item) => (
-                <div key={item.id} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                  <div style={{ width: 80, height: 100, borderRadius: '8px', overflow: 'hidden', background: '#f9f9f9', flexShrink: 0 }}>
+                <div key={item.id} style={{ display: 'flex', gap: '1.5rem' }}>
+                  <div style={{ width: 110, height: 140, borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'var(--bg-subtle)', flexShrink: 0 }}>
                     {item.image?.url && (
                       <img src={item.image.url} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     )}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: '#111', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {item.title}
-                    </h3>
-                    <p style={{ margin: '0.25rem 0 0.75rem', fontSize: '0.875rem', color: '#666' }}>
-                      ${item.price}
-                    </p>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 900, textTransform: 'uppercase' }}>{item.title}</h3>
                       <button
-                        onClick={() => handleMoveToCart(item)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.4rem',
-                          padding: '0.4rem 0.8rem',
-                          background: '#f5f5f5',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = '#eeeeee'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = '#f5f5f5'}
-                      >
-                        <ShoppingBag size={14} />
-                        Add to Cart
-                      </button>
-                      <button
-                        onClick={() => remove(item.id)}
-                        style={{
-                          padding: '0.4rem',
-                          background: 'none',
-                          border: 'none',
-                          color: '#999',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
+                        onClick={() => { remove(item.id); toast.info('ITEM REMOVED'); }}
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted)', padding: '2px' }}
                       >
                         <Trash2 size={16} />
                       </button>
                     </div>
+                    <p style={{ margin: '0.5rem 0', fontSize: '1rem', fontWeight: 900 }}>${item.price}</p>
+                    
+                    <button
+                      onClick={() => handleMoveToCart(item)}
+                      className="vexo-button"
+                      style={{ marginTop: 'auto', padding: '0.6rem 1.2rem', fontSize: '0.75rem', width: 'fit-content' }}
+                    >
+                      <ShoppingBag size={14} />
+                      ADD TO BAG
+                    </button>
                   </div>
                 </div>
               ))}
@@ -187,21 +157,13 @@ export default function WishlistDrawer({ open, onClose }: Props) {
 
         {/* Footer */}
         {items.length > 0 && (
-          <div style={{ padding: '1.5rem', borderTop: '1px solid #f0f0f0' }}>
+          <div style={{ padding: '2rem', borderTop: '1px solid var(--border)', background: 'rgba(255,255,255,0.2)' }}>
             <button
-              onClick={() => { clear(); toast.info('Wishlist cleared'); }}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                background: 'none',
-                border: '1px solid #e5e5e5',
-                borderRadius: '8px',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                cursor: 'pointer'
-              }}
+              onClick={() => { clear(); toast.info('WISHLIST CLEARED'); }}
+              className="vexo-button vexo-button-outline"
+              style={{ width: '100%', height: '56px', justifyContent: 'center' }}
             >
-              Clear All Items
+              CLEAR ALL ITEMS
             </button>
           </div>
         )}

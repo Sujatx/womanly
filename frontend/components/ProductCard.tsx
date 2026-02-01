@@ -1,4 +1,3 @@
-// components/ProductCard.tsx
 'use client';
 
 import Link from 'next/link';
@@ -9,16 +8,6 @@ import { toast } from 'sonner';
 
 type Img = { url: string; altText?: string };
 type Money = { amount: string; currencyCode: string };
-
-type Product = {
-  handle: string;
-  title: string;
-  image?: Img;
-  hoverImage?: Img;
-  price: Money;
-  rating?: number; // 0-5
-  reviewCount?: number;
-};
 
 function formatPrice(price: Money) {
   const n = Number(price.amount);
@@ -33,177 +22,91 @@ function formatPrice(price: Money) {
   }
 }
 
-function StarRating({ rating, reviewCount }: { rating: number; reviewCount?: number }) {
-  const fullStars = Math.floor(rating);
-  const hasHalfStar = rating % 1 >= 0.5;
-  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-      <div
-        role="img"
-        aria-label={`${rating} out of 5 stars`}
-        style={{ display: 'flex', alignItems: 'center', gap: '2px' }}
-      >
-        {/* Full stars */}
-        {Array.from({ length: fullStars }).map((_, i) => (
-          <svg
-            key={`full-${i}`}
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            style={{ color: '#fbbf24' }}
-            aria-hidden="true"
-          >
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-          </svg>
-        ))}
-
-        {/* Half star */}
-        {hasHalfStar && (
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            style={{ color: '#fbbf24' }}
-            aria-hidden="true"
-          >
-            <defs>
-              <linearGradient id={`half-${rating}`}>
-                <stop offset="50%" stopColor="currentColor" />
-                <stop offset="50%" stopColor="transparent" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-              fill={`url(#half-${rating})`}
-              stroke="currentColor"
-              strokeWidth="1"
-            />
-          </svg>
-        )}
-
-        {/* Empty stars */}
-        {Array.from({ length: emptyStars }).map((_, i) => (
-          <svg
-            key={`empty-${i}`}
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            style={{ color: '#d1d5db' }}
-            aria-hidden="true"
-          >
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-          </svg>
-        ))}
-      </div>
-
-      {/* Review count */}
-      {reviewCount !== undefined && (
-        <span className="text-xs muted" style={{ fontWeight: 500 }}>
-          ({reviewCount})
-        </span>
-      )}
-    </div>
-  );
-}
-
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({ product }: { product: any }) {
   const { has, toggle } = useWishlist();
   const inWL = has(product.handle);
 
   return (
-    <div className="card" style={{ position: 'relative' }}>
+    <div className="vexo-card" style={{ opacity: product.isOutOfStock ? 0.7 : 1 }}>
       <Link href={`/products/${product.handle}`} aria-label={product.title}>
-        <div className="hover-zoom" style={{ borderRadius: 12, border: '1px solid var(--border)' }}>
-          <div
-            className="aspect-4-5 product-image-wrapper"
-            style={{ position: 'relative', overflow: 'hidden' }}
-            aria-hidden="true"
-          >
-            {/* Base image */}
-            {product.image?.url ? (
-              <img
-                src={product.image.url}
-                alt={product.image.altText || product.title}
-                className="media-cover product-image-base"
-              />
-            ) : (
-              <div className="skeleton aspect-4-5" />
-            )}
-
-            {/* Hover image swap */}
-            {product.hoverImage?.url && (
-              <img
-                src={product.hoverImage.url}
-                alt=""
-                aria-hidden="true"
-                className="media-cover product-image-hover"
-              />
-            )}
-          </div>
-        </div>
-
-        <div style={{ marginTop: '.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <p style={{ fontWeight: 600, lineHeight: 1.3, margin: 0 }}>{product.title}</p>
-          
-          {/* Rating */}
-          {product.rating !== undefined && (
-            <StarRating rating={product.rating} reviewCount={product.reviewCount} />
+        <div className="vexo-card-image hover-zoom">
+          {product.image?.url ? (
+            <img
+              src={product.image.url}
+              alt={product.image.altText || product.title}
+              className="media-cover"
+            />
+          ) : (
+            <div className="skeleton media-cover" />
           )}
 
-          {/* Price */}
-          <p className="text-sm muted" style={{ margin: 0, fontWeight: 600 }}>
-            {formatPrice(product.price)}
-          </p>
+          {/* Out of Stock Overlay */}
+          {product.isOutOfStock && (
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(255,255,255,0.6)',
+              display: 'grid',
+              placeItems: 'center',
+              zIndex: 5
+            }}>
+              <span style={{ 
+                fontSize: '0.7rem', 
+                fontWeight: 900, 
+                background: 'var(--fg)', 
+                color: 'white', 
+                padding: '0.5rem 1rem', 
+                borderRadius: 'var(--radius-pill)',
+                letterSpacing: '0.05em'
+              }}>OUT OF STOCK</span>
+            </div>
+          )}
+
+          {/* Wishlist Icon Overlay */}
+          <button
+            type="button"
+            aria-label={inWL ? 'Remove from wishlist' : 'Add to wishlist'}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggle({
+                id: product.handle,
+                title: product.title,
+                image: product.image,
+                price: Number(product.price.amount),
+                currencyCode: product.price.currencyCode,
+              });
+              if (inWL) toast.info('ITEM REMOVED');
+              else toast.success('ADDED TO WISHLIST');
+            }}
+            style={{
+              position: 'absolute',
+              top: '1rem',
+              right: '1rem',
+              background: 'rgba(255,255,255,0.8)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              display: 'grid',
+              placeItems: 'center',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+          >
+            <Heart size={16} fill={inWL ? "#000" : "none"} strokeWidth={inWL ? 0 : 2} />
+          </button>
+        </div>
+
+        {/* Floating Info Badge */}
+        <div className="vexo-card-info">
+          <div>
+            <p className="vexo-card-title">{product.title}</p>
+            <p className="text-xs" style={{ margin: 0, opacity: 0.6 }}>WINTER COLLECTION</p>
+          </div>
+          <p className="vexo-card-price">{formatPrice(product.price)}</p>
         </div>
       </Link>
-
-      {/* Toggle button with aria-pressed and accessible name */}
-      <button
-        type="button"
-        aria-label={inWL ? 'Remove from wishlist' : 'Add to wishlist'}
-        aria-pressed={inWL}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          toggle({
-            id: product.handle,
-            title: product.title,
-            image: product.image,
-            price: Number(product.price.amount),
-            currencyCode: product.price.currencyCode,
-          });
-          if (inWL) {
-            toast.info('Removed from wishlist');
-          } else {
-            toast.success('Added to wishlist');
-          }
-        }}
-        className="wishlist-btn"
-        style={{
-          position: 'absolute',
-          top: 10,
-          right: 10,
-          width: 36,
-          height: 36,
-          borderRadius: '50%',
-          background: '#fff',
-          border: '1px solid #eee',
-          display: 'grid',
-          placeItems: 'center',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-          cursor: 'pointer',
-          transition: 'all 0.2s',
-        }}
-      >
-        <Heart size={18} fill={inWL ? "#111" : "none"} strokeWidth={inWL ? 0 : 2} style={{ color: inWL ? '#111' : '#666' }} />
-      </button>
     </div>
   );
 }

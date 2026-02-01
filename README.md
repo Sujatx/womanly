@@ -15,10 +15,8 @@ A modern, high-performance e-commerce application built with Next.js 15 and Fast
 ### Prerequisites
 - Docker Desktop
 - Node.js (v18+)
-- Python 3.12 (optional, for local script execution)
 
 ### 1. Start the Backend (Docker)
-The backend and database run in Docker containers.
 ```bash
 docker compose up --build -d
 ```
@@ -34,7 +32,7 @@ npm run dev
 *   **App:** `http://localhost:3000`
 
 ## Configuration
-Create a `.env` file in the root for backend secrets (already set up for dev) and `frontend/.env.local` for frontend public keys.
+Create a `.env` file in the root for backend secrets and `frontend/.env.local` for frontend public keys.
 
 **Root `.env` (Backend):**
 ```env
@@ -54,5 +52,5 @@ NEXT_PUBLIC_RAZORPAY_KEY_ID=your_test_key_id
 
 ## Architecture
 *   **Frontend:** Next.js 15, TypeScript, Lucide React, Sonner.
-*   **Backend:** FastAPI, SQLModel, PostgreSQL, Alembic.
+*   **Backend:** FastAPI, SQLModel, PostgreSQL.
 *   **Infrastructure:** Docker Compose.

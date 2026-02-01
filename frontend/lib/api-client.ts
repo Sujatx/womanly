@@ -1,15 +1,34 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
+export type ProductVariant = {
+  id: number;
+  sku: string;
+  size?: string;
+  color?: string;
+  material?: string;
+  price_adjustment: number;
+  stock_quantity: number;
+  is_available: boolean;
+};
+
+export type ProductImage = {
+  id: number;
+  image_url: string;
+  alt_text?: string;
+  display_order: number;
+  is_primary: boolean;
+};
+
 export type Product = {
   id: number;
   title: string;
   description: string;
   price: number;
   brand?: string;
-  images: string[];
   thumbnail?: string;
-  tags?: string[];
   category_slug?: string;
+  variants: ProductVariant[];
+  product_images: ProductImage[];
 };
 
 export type ProductList = {
@@ -72,23 +91,33 @@ export async function searchProducts(q: string, limit = 24, page = 1): Promise<P
 }
 
 export function toCard(p: Product) {
-    const image = p.images?.[0] ? { url: p.images[0], altText: p.title } : undefined;
+    const primaryImg = p.product_images?.find(img => img.is_primary) || p.product_images?.[0];
+    const image = primaryImg ? { url: primaryImg.image_url, altText: p.title } : { url: p.thumbnail || '', altText: p.title };
+    
+    const secondaryImg = p.product_images?.find(img => !img.is_primary) || p.product_images?.[1];
+    
+    // Calculate total stock for inventory badges
+    const totalStock = p.variants?.reduce((acc, v) => acc + v.stock_quantity, 0) || 0;
+    const isAvailable = p.variants?.some(v => v.is_available && v.stock_quantity > 0) ?? true;
+
     return {
       handle: String(p.id),
       title: p.title,
       image,
-      hoverImage: p.images?.[1] ? { url: p.images[1], altText: p.title } : undefined,
+      hoverImage: secondaryImg ? { url: secondaryImg.image_url, altText: p.title } : undefined,
       price: { amount: String(p.price), currencyCode: 'USD' },
+      totalStock,
+      isOutOfStock: !isAvailable || totalStock === 0
     };
 }
 
 // Cart Types
 export type CartItem = {
     id: number;
-    product_id: number;
+    variant_id: number;
     quantity: number;
     selected_options?: string;
-    product?: Product;
+    variant?: ProductVariant & { product?: Product };
 };
 
 export type Cart = {
@@ -108,11 +137,11 @@ export async function getCart(): Promise<Cart> {
     return fetchAPI<Cart>('/cart', { headers: getAuthHeaders(), cache: 'no-store' });
 }
 
-export async function addToCart(product_id: number, quantity: number, selected_options?: string): Promise<Cart> {
+export async function addToCart(variant_id: number, quantity: number, selected_options?: string): Promise<Cart> {
     return fetchAPI<Cart>('/cart/items', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ product_id, quantity, selected_options }),
+        body: JSON.stringify({ variant_id, quantity, selected_options }),
     });
 }
 
@@ -143,38 +172,30 @@ export async function verifyPayment(data: {
     });
 }
 
-// Mapper: DummyProduct -> PDPClient props (simulated options/variants)
 export function toPDP(p: Product) {
-    const images = (p.images || []).map((url) => ({ url, altText: p.title }));
-    // DummyJSON lacks variants; simulate a couple for demo UX
-    // Backend V1 also doesn't fully support variant logic yet (just placeholders in Seed?)
-    // But we need to match the UI expectation.
-    const options = [
-      { name: 'Size', values: ['S', 'M', 'L'] },
-      { name: 'Color', values: ['Black', 'Ivory'] },
-    ];
-    const variants = [
-      {
-        id: `var_${p.id}_S_Black`,
-        title: 'S / Black',
-        availableForSale: true,
-        price: { amount: String(p.price), currencyCode: 'USD' },
+    const images = (p.product_images || []).map((img) => ({ url: img.image_url, altText: img.alt_text || p.title }));
+    if (images.length === 0 && p.thumbnail) {
+        images.push({ url: p.thumbnail, altText: p.title });
+    }
+
+    const sizes = Array.from(new Set(p.variants?.map(v => v.size).filter(Boolean)));
+    const colors = Array.from(new Set(p.variants?.map(v => v.color).filter(Boolean)));
+
+    const options = [];
+    if (sizes.length > 0) options.push({ name: 'Size', values: sizes });
+    if (colors.length > 0) options.push({ name: 'Color', values: colors });
+
+    const variants = (p.variants || []).map(v => ({
+        id: String(v.id),
+        title: `${v.size || ''} / ${v.color || ''}`,
+        availableForSale: v.is_available && v.stock_quantity > 0,
+        stockQuantity: v.stock_quantity,
+        price: { amount: String(p.price + v.price_adjustment), currencyCode: 'USD' },
         selectedOptions: [
-          { name: 'Size', value: 'S' },
-          { name: 'Color', value: 'Black' },
-        ],
-      },
-      {
-        id: `var_${p.id}_M_Ivory`,
-        title: 'M / Ivory',
-        availableForSale: true,
-        price: { amount: String(p.price), currencyCode: 'USD' },
-        selectedOptions: [
-          { name: 'Size', value: 'M' },
-          { name: 'Color', value: 'Ivory' },
-        ],
-      },
-    ];
+            ...(v.size ? [{ name: 'Size', value: v.size }] : []),
+            ...(v.color ? [{ name: 'Color', value: v.color }] : []),
+        ]
+    }));
   
     return {
       id: p.id,
@@ -183,6 +204,6 @@ export function toPDP(p: Product) {
       images,
       options,
       variants,
-      tags: p.tags || [],
+      tags: [],
     };
-  }
+}

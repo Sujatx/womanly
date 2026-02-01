@@ -10,3 +10,4 @@ razorpay
 pydantic-settings
 python-multipart
 email-validator
+aiosmtplib
