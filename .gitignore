@@ -31,3 +31,6 @@ env
 
 # Docker
 docker-data
+
+# Local Roadmap
+GEMINI.md
