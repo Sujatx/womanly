@@ -18,7 +18,19 @@ export default function HeaderNavLinks() {
       {items.map(({ href, label }) => {
         const current = pathname?.startsWith(href);
         return (
-          <Link key={href} href={href} aria-current={current ? 'page' : undefined}>
+          <Link 
+            key={href} 
+            href={href} 
+            aria-current={current ? 'page' : undefined}
+            style={{
+              fontSize: '0.75rem',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              opacity: current ? 1 : 0.6,
+              transition: 'opacity 0.2s'
+            }}
+          >
             {label}
           </Link>
         );

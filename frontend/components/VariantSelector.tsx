@@ -19,19 +19,26 @@ export function VariantSelector({
   selected: Record<string, string>;
   onChange: (name: string, value: string) => void;
   disabledValues?: Record<string, string[]>;
-  labelMap?: Record<string, string>; // optional human labels per option (e.g., { Color: 'Color' })
+  labelMap?: Record<string, string>;
 }) {
   if (!options?.length) return null;
 
   return (
-    <div className="space-y-3">
+    <div style={{ display: 'grid', gap: '1.5rem' }}>
       {options.map((opt) => {
         const pretty = labelMap[opt.name] || opt.name;
         const disabledSet = new Set(disabledValues[opt.name] || []);
         return (
           <div key={opt.name}>
-            <p className="text-xs muted" style={{ marginBottom: '0.25rem' }}>{pretty}</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <p style={{ 
+              fontSize: '0.7rem', 
+              fontWeight: 900, 
+              textTransform: 'uppercase', 
+              letterSpacing: '0.1em',
+              marginBottom: '0.75rem',
+              color: 'var(--muted)'
+            }}>{pretty}</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
               {opt.values.map((value) => {
                 const isSelected = selected[opt.name] === value;
                 const isDisabled = disabledSet.has(value);
@@ -42,13 +49,18 @@ export function VariantSelector({
                     disabled={isDisabled}
                     aria-pressed={isSelected}
                     onClick={() => onChange(opt.name, value)}
-                    className="rounded"
                     style={{
-                      padding: '0.4rem 0.75rem',
-                      border: isSelected ? '2px solid #111' : '1px solid #ddd',
-                      background: isDisabled ? '#f2f2f2' : '#fff',
-                      color: isDisabled ? '#9a9a9a' : '#111',
+                      padding: '0.6rem 1.5rem',
+                      borderRadius: 'var(--radius-pill)',
+                      border: isSelected ? '2px solid var(--fg)' : '1px solid var(--border)',
+                      background: isSelected ? 'var(--fg)' : 'transparent',
+                      color: isSelected ? 'white' : isDisabled ? 'var(--muted)' : 'var(--fg)',
                       cursor: isDisabled ? 'not-allowed' : 'pointer',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      transition: 'all 0.2s',
+                      opacity: isDisabled ? 0.4 : 1
                     }}
                   >
                     {value}

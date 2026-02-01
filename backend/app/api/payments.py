@@ -1,11 +1,12 @@
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
 from app.db import get_session
 from app.models import Cart, Order, OrderItem, User
 from app.deps import get_current_user
 from app.services.razorpay_service import create_razorpay_order, verify_payment_signature
+from app.services.email_service import send_order_confirmation
 from app.api.cart import get_cart_with_items
 from pydantic import BaseModel
 
@@ -21,6 +22,7 @@ def create_order(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
+    # ... (rest of create_order logic remains the same)
     # 1. Get Cart
     cart = get_cart_with_items(session, current_user.id)
     if not cart or not cart.items:
@@ -82,8 +84,9 @@ def create_order(
     }
 
 @router.post("/verify")
-def verify_payment(
+async def verify_payment(
     data: PaymentVerify,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -115,6 +118,9 @@ def verify_payment(
         session.delete(cart)
         
     session.commit()
+
+    # 4. Send Confirmation Email (Background)
+    background_tasks.add_task(send_order_confirmation, current_user.email, order.id, order.total_amount)
     
     return {"status": "success", "order_id": order.id}
 

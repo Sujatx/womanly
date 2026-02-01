@@ -17,7 +17,7 @@ export default function PLPFilters() {
   const search = useSearchParams();
 
   const [q, setQ] = useURLState('q', '');
-  const [sort, setSort] = useURLState('sort', 'relevance'); // relevance | price-asc | price-desc | title-asc
+  const [sort, setSort] = useURLState('sort', 'relevance');
   const [min, setMin] = useURLState('min', '');
   const [max, setMax] = useURLState('max', '');
 
@@ -35,26 +35,52 @@ export default function PLPFilters() {
   }
 
   return (
-    <div className="text-sm" style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap', marginBottom:'0.75rem' }}>
+    <div style={{ display:'flex', gap:'1.5rem', flexWrap:'wrap', alignItems: 'center' }}>
       <input
         aria-label="Search"
         value={q}
         onChange={(e)=>setQ(e.target.value)}
-        placeholder="Search"
-        style={{ border:'1px solid #ddd', padding:'.35rem .5rem', borderRadius:6 }}
+        placeholder="SEARCH COLLECTION..."
+        style={{ 
+          background: 'transparent',
+          border:'1px solid var(--border)', 
+          padding:'0.75rem 1.5rem', 
+          borderRadius:'var(--radius-pill)',
+          fontSize: '0.75rem',
+          fontWeight: 800,
+          width: '250px'
+        }}
       />
-      <select aria-label="Sort" value={sort} onChange={(e)=>setSort(e.target.value)} style={{ border:'1px solid #ddd', padding:'.35rem .5rem', borderRadius:6 }}>
-        <option value="relevance">Relevance</option>
-        <option value="price-asc">Price ↑</option>
-        <option value="price-desc">Price ↓</option>
-        <option value="title-asc">Title A–Z</option>
+      
+      <select 
+        aria-label="Sort" 
+        value={sort} 
+        onChange={(e)=>setSort(e.target.value)} 
+        style={{ 
+          background: 'transparent',
+          border:'1px solid var(--border)', 
+          padding:'0.75rem 1.5rem', 
+          borderRadius:'var(--radius-pill)',
+          fontSize: '0.75rem',
+          fontWeight: 800,
+          cursor: 'pointer'
+        }}
+      >
+        <option value="relevance">SORT: RELEVANCE</option>
+        <option value="price-asc">PRICE: LOW TO HIGH</option>
+        <option value="price-desc">PRICE: HIGH TO LOW</option>
+        <option value="title-asc">TITLE: A–Z</option>
       </select>
-      <input aria-label="Min price" value={min} onChange={(e)=>setMin(e.target.value)} placeholder="Min" inputMode="numeric"
-             style={{ width:70, border:'1px solid #ddd', padding:'.35rem .5rem', borderRadius:6 }} />
-      <input aria-label="Max price" value={max} onChange={(e)=>setMax(e.target.value)} placeholder="Max" inputMode="numeric"
-             style={{ width:70, border:'1px solid #ddd', padding:'.35rem .5rem', borderRadius:6 }} />
-      <button onClick={apply} style={{ border:'1px solid #ddd', padding:'.35rem .6rem', borderRadius:6, background:'#f5f5f5' }}>Apply</button>
-      <button onClick={reset} style={{ border:'1px solid #ddd', padding:'.35rem .6rem', borderRadius:6, background:'#fff' }}>Reset</button>
+
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <input aria-label="Min price" value={min} onChange={(e)=>setMin(e.target.value)} placeholder="MIN $" inputMode="numeric"
+               style={{ width:100, background: 'transparent', border:'1px solid var(--border)', padding:'0.75rem 1rem', borderRadius:'var(--radius-pill)', fontSize: '0.75rem', fontWeight: 800 }} />
+        <input aria-label="Max price" value={max} onChange={(e)=>setMax(e.target.value)} placeholder="MAX $" inputMode="numeric"
+               style={{ width:100, background: 'transparent', border:'1px solid var(--border)', padding:'0.75rem 1rem', borderRadius:'var(--radius-pill)', fontSize: '0.75rem', fontWeight: 800 }} />
+      </div>
+
+      <button onClick={apply} className="vexo-button" style={{ padding: '0.75rem 2rem', fontSize: '0.75rem' }}>APPLY</button>
+      <button onClick={reset} className="vexo-button vexo-button-outline" style={{ padding: '0.75rem 2rem', fontSize: '0.75rem' }}>RESET</button>
     </div>
   );
 }

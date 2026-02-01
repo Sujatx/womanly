@@ -23,204 +23,363 @@ type Variant = {
 };
 
 export default function PDPClient({
+
   id,
+
   title,
+
   description,
+
   images,
+
   options,
+
   variants,
+
   tags,
+
 }: {
+
   id: number;
+
   title: string;
+
   description: string;
+
   images: { url: string; altText?: string }[];
+
   options: { name: string; values: string[] }[];
+
   variants: Variant[];
+
   tags?: string[];
+
 }) {
+
   const [selected, setSelected] = useState<Record<string, string>>({});
+
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+
   const [justAdded, setJustAdded] = useState(false);
+
   const { add } = useCart();
 
-  // Defaults: first value per option (covers size/color, etc.)
+
+
   useEffect(() => {
+
     const init: Record<string, string> = {};
+
     for (const o of options) init[o.name] = o.values[0];
+
     setSelected(init);
+
   }, [options]);
 
-  // Active variant from selections
-  const activeVariant = useMemo(() => {
-    return (
-      variants.find((v) =>
-        v.selectedOptions.every((so) => selected[so.name] === so.value)
-      ) || variants[0]
-    );
-  }, [variants, selected]);
 
-  // Disable unavailable values
-  const disabledValues = useMemo(() => {
+
+    const activeVariant = useMemo(() => {
+
+
+
+      return (
+
+
+
+        variants.find((v) =>
+
+
+
+          v.selectedOptions.every((so) => selected[so.name] === so.value)
+
+
+
+        ) || variants[0]
+
+
+
+      );
+
+
+
+    }, [variants, selected]);
+
+
+
+  
+
+
+
+    const inventoryStatus = useMemo(() => {
+
+
+
+      if (!activeVariant || !activeVariant.availableForSale) return 'OUT OF STOCK';
+
+
+
+      if (activeVariant.stockQuantity < 5) return `ONLY ${activeVariant.stockQuantity} LEFT`;
+
+
+
+      return 'IN STOCK';
+
+
+
+    }, [activeVariant]);
+
+
+
+  
+
+
+
+    const disabledValues = useMemo(() => {
+
+
+
+  
+
     const map: Record<string, string[]> = {};
+
     for (const opt of options) {
+
       const others = options.filter((o) => o.name !== opt.name);
+
       const dis: string[] = [];
+
       for (const value of opt.values) {
+
         const matches = variants.some((v) => {
+
           if (!v.availableForSale) return false;
+
           for (const o of others) {
+
             const want = selected[o.name];
+
             const has = v.selectedOptions.find((so) => so.name === o.name)?.value;
+
             if (want && has && want !== has) return false;
+
           }
+
           return v.selectedOptions.find((so) => so.name === opt.name)?.value === value;
+
         });
+
         if (!matches) dis.push(value);
+
       }
+
       map[opt.name] = dis;
+
     }
+
     return map;
+
   }, [options, variants, selected]);
 
-  const priceText = `${activeVariant.price.amount} ${activeVariant.price.currencyCode}`;
+
+
+  const priceText = `${activeVariant?.price.amount || '0'}`;
+
+
 
   function onAdd() {
+
+    if (!activeVariant) return;
+
     add({
-      id: String(id), // Use actual product ID
-      productId: String(id), // Ensure productId is set for local/sync logic
+
+      id: String(activeVariant.id),
+
+      productId: String(id),
+
       title,
+
       price: Number(activeVariant.price.amount),
+
       currencyCode: activeVariant.price.currencyCode || 'USD',
+
       qty: 1,
+
       image: images?.[0],
+
       selectedOptions: activeVariant.selectedOptions,
+
     });
-    toast.success('Added to cart', {
-      description: `${title} - ${activeVariant.title}`,
-      action: {
-        label: 'View Cart',
-        onClick: () => window.dispatchEvent(new CustomEvent('cart:open'))
-      }
-    });
+
+    toast.success('ITEM ADDED TO BAG');
+
     setJustAdded(true);
+
     setTimeout(() => setJustAdded(false), 2000);
+
   }
 
+
+
   return (
-    <div style={{ display: 'grid', gap: '2rem', gridTemplateColumns: '1fr' }}>
-      <style jsx>{`
-        @media (min-width: 768px) {
-          .pdp-grid {
-            grid-template-columns: minmax(0, 680px) 1fr; /* LEFT gallery, RIGHT details */
-            align-items: start;
-          }
-        }
-      `}</style>
 
-      <div className="pdp-grid" style={{ display: 'grid', gap: '2rem', gridTemplateColumns: '1fr' }}>
-        {/* LEFT: Gallery group; tweak maxWidth to control desktop image size */}
-        <section style={{ maxWidth: 680, width: '100%', justifySelf: 'start' }}>
+    <div style={{ paddingBottom: '10rem' }}>
+
+      <div className="bg-text" style={{ top: '15%' }}>{title.split(' ')[0]}</div>
+
+      
+
+      <div className="container" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '5rem', alignItems: 'start', position: 'relative', zIndex: 1 }}>
+
+        {/* LEFT: Gallery */}
+
+        <section>
+
           <PDPGallery images={images} />
+
         </section>
 
-        {/* RIGHT: Details + options + actions (beside the main image) */}
-        <section style={{ minWidth: 0 }}>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>{title}</h1>
-          <p style={{ marginTop: '.25rem', fontSize: '1.25rem', fontWeight: 600 }}>{priceText}</p>
 
-          {/* Size/Color/etc. options */}
-          <div style={{ marginTop: '2rem' }}>
-            <VariantSelector
-              options={options}
-              selected={selected}
-              disabledValues={disabledValues}
-              onChange={(name, value) => setSelected((prev) => ({ ...prev, [name]: value }))}
-            />
+
+        {/* RIGHT: Details */}
+
+        <section style={{ paddingTop: '2rem' }}>
+
+                    <span className="collection-tag" style={{ color: 'var(--muted)' }}>WINTER 2025 EDITION</span>
+
+                    <h1 style={{ fontSize: '3rem', margin: '1rem 0', lineHeight: 1 }}>{title}</h1>
+
+                    
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+
+                      <p style={{ fontSize: '2rem', fontWeight: 900, margin: 0 }}>{priceText}</p>
+
+                      <span style={{ 
+
+                        fontSize: '0.7rem', 
+
+                        fontWeight: 900, 
+
+                        padding: '0.4rem 0.8rem', 
+
+                        borderRadius: 'var(--radius-pill)',
+
+                        background: inventoryStatus === 'OUT OF STOCK' ? '#ef4444' : 'var(--fg)',
+
+                        color: 'white',
+
+                        letterSpacing: '0.05em'
+
+                      }}>
+
+                        {inventoryStatus}
+
+                      </span>
+
+                    </div>
+
+          
+
+                    <div style={{ marginBottom: '3rem' }}>
+
+                      <VariantSelector
+
+                        options={options}
+
+                        selected={selected}
+
+                        disabledValues={disabledValues}
+
+                        onChange={(name, value) => setSelected((prev) => ({ ...prev, [name]: value }))}
+
+                      />
+
+                    </div>
+
+          
+
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '4rem' }}>
+
+                      <button
+
+                        type="button"
+
+                        onClick={onAdd}
+
+                        disabled={justAdded || !activeVariant?.availableForSale}
+
+                        className="vexo-button"
+
+                        style={{ flex: 1, height: '64px', fontSize: '1rem', opacity: activeVariant?.availableForSale ? 1 : 0.5 }}
+
+                      >
+
+                        {!activeVariant?.availableForSale ? 'SOLD OUT' : justAdded ? 'ADDED TO BAG' : 'ADD TO BAG'}
+
+                      </button>
+
+          
+
+            <button 
+
+              className="vexo-button vexo-button-outline"
+
+              style={{ width: '64px', height: '64px', padding: 0, display: 'grid', placeItems: 'center' }}
+
+            >
+
+              <Heart />
+
+            </button>
+
           </div>
 
-          {/* Size guide */}
-          <div style={{ marginTop: '1rem' }}>
-            <button
-              type="button"
-              onClick={() => setSizeGuideOpen(true)}
-              style={{ 
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                background: 'none',
-                padding: '0',
-                border: 'none',
-                textDecoration: 'underline',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                cursor: 'pointer',
-                color: '#666'
-              }}
-            >
-              <Ruler size={16} />
-              Size Guide
-            </button>
-          </div>
 
-          {/* Buy/Add to cart */}
-          <div style={{ marginTop: '2rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={onAdd}
-              disabled={justAdded}
-              style={{ 
-                flex: 1,
-                minWidth: '200px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.75rem',
-                borderRadius: '12px', 
-                padding: '1rem', 
-                background: justAdded ? '#f0f0f0' : '#fff', 
-                border: '1px solid #111',
-                color: '#111',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => !justAdded && (e.currentTarget.style.background = '#f9f9f9')}
-              onMouseLeave={(e) => !justAdded && (e.currentTarget.style.background = '#fff')}
-            >
-              {justAdded ? (
-                <>
-                  <Check size={18} />
-                  Added to bag
-                </>
-              ) : (
-                <>
-                  <ShoppingBag size={18} />
-                  Add to bag
-                </>
-              )}
-            </button>
 
-            <div style={{ flex: 1, minWidth: '200px' }}>
-              <CheckoutButtons merchandiseId={activeVariant?.id} />
+          <div style={{ display: 'grid', gap: '2rem' }}>
+
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
+
+              <h3 style={{ fontSize: '0.8rem', fontWeight: 900, marginBottom: '1rem' }}>PRODUCT DESCRIPTION</h3>
+
+              <p style={{ lineHeight: 1.7 }}>{description}</p>
+
             </div>
-          </div>
 
-          {/* Delivery & Returns */}
-          <div style={{ marginTop: '2rem' }}>
+            
+
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
+
+              <button 
+
+                onClick={() => setSizeGuideOpen(true)}
+
+                style={{ background: 'none', border: 'none', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem' }}
+
+              >
+
+                <Ruler size={18} /> SIZE GUIDE & MEASUREMENTS
+
+              </button>
+
+            </div>
+
+
+
             <DeliveryReturns />
+
           </div>
 
-          {/* Details */}
-          <div style={{ marginTop: '2.5rem', borderTop: '1px solid #f0f0f0', paddingTop: '1.5rem' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem' }}>Description</h3>
-            <p style={{ fontSize: '0.95rem', color: '#444', lineHeight: 1.6 }}>{description}</p>
-          </div>
         </section>
+
       </div>
 
-      {/* Size Guide modal */}
-      <SizeGuideModal open={sizeGuideOpen} onClose={() => setSizeGuideOpen(false)} category={tags?.[0]} />
+
+
+      <SizeGuideModal open={sizeGuideOpen} onClose={() => setSizeGuideOpen(false)} />
+
     </div>
+
   );
+
 }

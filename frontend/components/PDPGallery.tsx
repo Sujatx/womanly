@@ -19,8 +19,8 @@ export function PDPGallery({ images }: { images: Img[] }) {
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '84px 1fr',
-        gap: '0.75rem',
+        gridTemplateColumns: '100px 1fr',
+        gap: '1.5rem',
         alignItems: 'start',
       }}
     >
@@ -28,11 +28,11 @@ export function PDPGallery({ images }: { images: Img[] }) {
       <div
         style={{
           display: 'grid',
-          gap: '0.5rem',
+          gap: '1rem',
           gridAutoRows: 'min-content',
-          maxHeight: 520,
+          maxHeight: 600,
           overflow: 'auto',
-          paddingRight: 2,
+          paddingRight: 4,
         }}
         aria-label="Image thumbnails"
       >
@@ -43,17 +43,17 @@ export function PDPGallery({ images }: { images: Img[] }) {
               key={i}
               onClick={() => setActive(i)}
               onMouseEnter={() => setActive(i)}
-              onFocus={() => setActive(i)}
               aria-current={isActive ? 'true' : undefined}
-              aria-label={img.altText ? `Thumbnail: ${img.altText}` : `Thumbnail ${i + 1}`}
               style={{
-                width: 80,
-                height: 100,
-                borderRadius: 8,
+                width: 100,
+                height: 125,
+                borderRadius: 'var(--radius-sm)',
                 overflow: 'hidden',
-                border: isActive ? '2px solid #111' : '1px solid #ddd',
-                background: '#f3f3f3',
+                border: isActive ? '3px solid var(--fg)' : '1px solid var(--border)',
+                background: 'var(--bg-subtle)',
                 cursor: 'pointer',
+                transition: 'all 0.2s',
+                opacity: isActive ? 1 : 0.7,
               }}
             >
               <Image
@@ -61,7 +61,7 @@ export function PDPGallery({ images }: { images: Img[] }) {
                 alt={img.altText || `Thumbnail ${i + 1}`}
                 width={300}
                 height={400}
-                sizes="80px"
+                sizes="100px"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 loading="lazy"
               />
@@ -70,22 +70,23 @@ export function PDPGallery({ images }: { images: Img[] }) {
         })}
       </div>
 
-      {/* Main image: fixed 4:5 aspect box + fill = no extra bottom space */}
+      {/* Main image */}
       <div
         style={{
           position: 'relative',
           width: '100%',
           aspectRatio: '4 / 5',
-          borderRadius: 12,
+          borderRadius: 'var(--radius-lg)',
           overflow: 'hidden',
-          background: '#f6f6f6',
+          background: 'var(--bg-subtle)',
+          boxShadow: 'var(--shadow-md)',
         }}
       >
         <Image
           src={current.url}
           alt={current.altText || 'Product image'}
           fill
-          sizes="(max-width: 768px) 90vw, 640px"
+          sizes="(max-width: 768px) 90vw, 800px"
           style={{ objectFit: 'cover' }}
           priority
         />

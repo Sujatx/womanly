@@ -39,57 +39,66 @@ export default function OrdersPage() {
   }, [token, router]);
 
   if (loading) {
-    return <div style={{ padding: '4rem', textAlign: 'center' }}>Loading your orders...</div>;
+    return (
+      <div style={{ display: 'grid', placeItems: 'center', height: '400px' }}>
+        <div className="skeleton" style={{ width: '100%', height: '400px' }} />
+      </div>
+    );
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+    <div>
       <header style={{ marginBottom: '3rem' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.04em', marginBottom: '0.5rem' }}>Your Orders</h1>
-        <p style={{ color: '#666' }}>View and track your recent purchases</p>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 900 }}>ORDER HISTORY</h2>
+        <p style={{ color: 'var(--muted)', fontWeight: 700, fontSize: '0.9rem' }}>VIEW AND TRACK YOUR RECENT PURCHASES</p>
       </header>
 
       {orders.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '4rem', border: '2px dashed #eee', borderRadius: '24px' }}>
-          <Package size={48} style={{ margin: '0 auto 1rem', color: '#ccc' }} />
-          <p style={{ fontWeight: 600, color: '#666' }}>You haven't placed any orders yet.</p>
+        <div style={{ textAlign: 'center', padding: '6rem', background: 'rgba(255,255,255,0.2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)' }}>
+          <Package size={64} style={{ margin: '0 auto 1.5rem', opacity: 0.1 }} />
+          <p style={{ fontWeight: 900, color: 'var(--muted)' }}>NO ORDERS FOUND</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div style={{ display: 'grid', gap: '2rem' }}>
           {orders.map((order) => (
-            <div key={order.id} style={{ border: '1px solid #f0f0f0', borderRadius: '20px', padding: '1.5rem', background: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', borderBottom: '1px solid #f5f5f5', paddingBottom: '1rem' }}>
+            <div key={order.id} style={{ 
+              background: 'rgba(255,255,255,0.3)', 
+              borderRadius: 'var(--radius-lg)', 
+              padding: '2rem', 
+              border: '1px solid var(--border)',
+              display: 'grid',
+              gap: '1.5rem'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--border)', paddingBottom: '1.5rem' }}>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#999', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.25rem' }}>
-                    <Tag size={12} /> Order ID: #{order.id}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111', fontWeight: 600 }}>
-                    <Calendar size={14} /> {new Date(order.created_at).toLocaleDateString()}
+                  <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--muted)', marginBottom: '0.5rem' }}>ORDER ID: #{order.id}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 800 }}>
+                    <Calendar size={16} /> {new Date(order.created_at).toLocaleDateString()}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <span style={{ 
                     display: 'inline-block',
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '20px',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
+                    padding: '0.4rem 1rem',
+                    borderRadius: 'var(--radius-pill)',
+                    fontSize: '0.7rem',
+                    fontWeight: 900,
                     textTransform: 'uppercase',
-                    background: order.status === 'paid' ? '#ecfdf5' : '#fef3c7',
-                    color: order.status === 'paid' ? '#059669' : '#d97706'
+                    background: order.status === 'paid' ? 'var(--fg)' : 'var(--bg-subtle)',
+                    color: order.status === 'paid' ? 'white' : 'var(--fg)',
+                    border: '1px solid var(--border)'
                   }}>
                     {order.status}
                   </span>
-                  <div style={{ marginTop: '0.5rem', fontSize: '1.25rem', fontWeight: 800 }}>
+                  <div style={{ marginTop: '0.75rem', fontSize: '1.5rem', fontWeight: 900 }}>
                     ${order.total_amount.toFixed(2)}
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-                {/* Simplified items list as images if we had them, or just item count */}
-                <div style={{ fontSize: '0.875rem', color: '#666' }}>
-                  {order.items?.length || 0} items in this order
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--muted)' }}>
+                  {order.items?.length || 0} ITEMS IN THIS ORDER
                 </div>
               </div>
             </div>

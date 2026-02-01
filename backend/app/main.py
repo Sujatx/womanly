@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.api import products, auth, cart, payments
+from app.api import products, auth, cart, payments, addresses
 from app.db import engine
 from sqlmodel import SQLModel
 
@@ -30,6 +30,7 @@ app.include_router(products.router, tags=["products"])
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(cart.router, prefix="/cart", tags=["cart"])
 app.include_router(payments.router, prefix="/payments", tags=["payments"])
+app.include_router(addresses.router, prefix="/addresses", tags=["addresses"])
 
 @app.get("/")
 def read_root():
