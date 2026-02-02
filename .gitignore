@@ -8,6 +8,7 @@ dist
 .next
 out
 coverage
+.vite
 
 # Python
 __pycache__
