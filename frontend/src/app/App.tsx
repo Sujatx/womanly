@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navbar } from '@/app/components/Navbar';
 import { SearchModal } from '@/app/components/SearchModal';
 import { Hero } from '@/app/components/Hero';
@@ -6,14 +6,32 @@ import { ProductCard } from '@/app/components/ProductCard';
 import { ProductDetailModal } from '@/app/components/ProductDetailModal';
 import { CartDrawer } from '@/app/components/CartDrawer';
 import { Footer } from '@/app/components/Footer';
-import { products } from '@/app/data/products';
 import type { Product, CartItem } from '@/app/data/products';
+import { fetchProducts } from '@/lib/api-client';
+import { transformProduct } from '@/lib/transformers';
 
 function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const apiProducts = await fetchProducts(1, 100);
+        const transformed = apiProducts.map(transformProduct);
+        setProducts(transformed);
+      } catch (err) {
+        console.error('Failed to load products', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProducts();
+  }, []);
 
   const handleAddToCart = (product: Product, details: { quantity: number; selectedSize: string; selectedColor: string }) => {
     const newItem: CartItem = {
@@ -151,13 +169,26 @@ function App() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {products.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onQuickView={setSelectedProduct}
-                />
-              ))}
+              {loading ? (
+                // Skeleton Loader
+                Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="space-y-4 animate-pulse">
+                    <div className="aspect-[3/4] bg-secondary/50 rounded-[var(--radius-lg)]" />
+                    <div className="space-y-2">
+                      <div className="h-4 bg-secondary/50 rounded w-3/4" />
+                      <div className="h-4 bg-secondary/50 rounded w-1/4" />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onQuickView={setSelectedProduct}
+                  />
+                ))
+              )}
             </div>
           </div>
         </section>
