@@ -21,8 +21,11 @@ function App() {
   useEffect(() => {
     async function loadProducts() {
       try {
+        console.log('Fetching products...');
         const apiProducts = await fetchProducts(1, 100);
+        console.log('Fetched products:', apiProducts);
         const transformed = apiProducts.map(transformProduct);
+        console.log('Transformed products:', transformed);
         setProducts(transformed);
       } catch (err) {
         console.error('Failed to load products', err);

@@ -9,13 +9,14 @@ from app.deps import get_current_user
 router = APIRouter()
 
 def get_cart_with_items(session: Session, user_id: int):
+    """Get cart with all related data in a single query (no N+1)."""
     statement = (
         select(Cart)
         .where(Cart.user_id == user_id)
         .options(
-            selectinload(Cart.items)
-            .selectinload(CartItem.variant)
-            .selectinload(ProductVariant.product)
+            selectinload(Cart.items).options(
+                selectinload(CartItem.variant).selectinload(ProductVariant.product)
+            )
         )
     )
     return session.exec(statement).first()

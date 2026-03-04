@@ -2,32 +2,57 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from sqlmodel import Session
+from sqlmodel import Session, select
 from app.db import get_session
 from app.config import settings
 from app.models import User
-from app.security.token import create_access_token # not used here but related
+from app.models.user import BlacklistedToken
+from app.security.token import verify_access_token
+from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], session: Session = Depends(get_session)) -> User:
+    """
+    Get current authenticated user from JWT token.
+    
+    Uses improved JWT validation with claim verification.
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        # Verify token with proper claim validation
+        payload = verify_access_token(token)
+        if not payload:
+            raise credentials_exception
+        
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
+            
     except JWTError:
         raise credentials_exception
-        
-    user = session.exec(select(User).where(User.email == email)).first()
-    if user is None:
+    
+    # Check if token is blacklisted (revoked)
+    blacklisted = session.exec(
+        select(BlacklistedToken).where(BlacklistedToken.token == token)
+    ).first()
+    
+    if blacklisted:
+        logger.warning(f"Attempted use of blacklisted token for user: {email}")
         raise credentials_exception
+        
+    # Get user from database (exclude soft-deleted users)
+    user = session.exec(select(User).where(User.email == email, User.deleted_at.is_(None))).first()
+    if user is None:
+        logger.warning(f"User not found for email in token: {email}")
+        raise credentials_exception
+    
     return user
 
-# Avoid circular import issues by importing select inside function or standard top level if Safe
-from sqlmodel import select

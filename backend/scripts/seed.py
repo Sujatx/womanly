@@ -19,18 +19,31 @@ def seed():
     from sqlmodel import SQLModel
     SQLModel.metadata.create_all(engine)
     
-    print("Fetching data from DummyJSON...")
-    url = "https://dummyjson.com/products?limit=100"
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    try:
-        with urllib.request.urlopen(req) as response:
-            data = json.loads(response.read().decode())
-            products_data = data['products']
-    except Exception as e:
-        print(f"Error fetching data: {e}")
-        return
-
-    print(f"Fetched {len(products_data)} products.")
+    print("Fetching women's clothing from DummyJSON...")
+    
+    # Women's clothing categories
+    categories = [
+        "womens-dresses",
+        "womens-shoes",
+        "womens-bags",
+        "womens-jewellery",
+        "womens-watches",
+    ]
+    
+    products_data = []
+    
+    for category in categories:
+        url = f"https://dummyjson.com/products/category/{category}?limit=100"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        try:
+            with urllib.request.urlopen(req) as response:
+                data = json.loads(response.read().decode())
+                products_data.extend(data.get('products', []))
+                print(f"Fetched {len(data.get('products', []))} products from {category}")
+        except Exception as e:
+            print(f"Error fetching {category}: {e}")
+    
+    print(f"Total fetched: {len(products_data)} products.")
 
     with Session(engine) as session:
         # 1. Handle Categories

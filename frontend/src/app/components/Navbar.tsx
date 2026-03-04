@@ -41,10 +41,10 @@ export function Navbar({ onSearchOpen, onCartOpen, cartItemCount }: NavbarProps)
           <div className="absolute left-1/2 -translate-x-1/2">
             <a 
               href="#home" 
-              className="font-headline text-[28px] tracking-tight text-foreground"
+              className="h-80 w-60 flex items-center justify-center"
               aria-label="Womanly Home"
             >
-              Womanly
+              <img src="/LOGO.png" alt="Womanly" className="max-h-full max-w-full object-contain" />
             </a>
           </div>
 
@@ -97,10 +97,10 @@ export function Navbar({ onSearchOpen, onCartOpen, cartItemCount }: NavbarProps)
 
           <a 
             href="#home" 
-            className="font-headline text-[24px] tracking-tight text-foreground"
+            className="h-40 w-80 flex items-center justify-center"
             aria-label="Womanly Home"
           >
-            Womanly
+            <img src="/favicon.png" alt="Womanly" className="max-h-full max-w-full object-contain" />
           </a>
 
           <div className="flex items-center gap-4">

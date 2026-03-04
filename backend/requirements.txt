@@ -11,3 +11,4 @@ pydantic-settings
 python-multipart
 email-validator
 aiosmtplib
+bleach

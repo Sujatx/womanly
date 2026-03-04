@@ -4,6 +4,11 @@ export function Footer() {
   return (
     <footer className="bg-foreground text-white py-16 md:py-24">
       <div className="container mx-auto px-6">
+        <div className="mb-12 pb-8 border-b border-white/20">
+          <a href="#home" className="h-16 w-40 inline-flex items-center" aria-label="Womanly Home">
+            <img src="/LOGO.png" alt="Womanly" className="max-h-full max-w-full object-contain invert" />
+          </a>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           {/* Newsletter */}
           <div className="md:col-span-2">

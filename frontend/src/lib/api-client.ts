@@ -4,7 +4,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export async function fetchProducts(page = 1, limit = 20): Promise<APIProduct[]> {
   try {
-    const response = await fetch(`${API_URL}/products?page=${page}&size=${limit}`);
+    const skip = (page - 1) * limit;
+    const response = await fetch(`${API_URL}/products?skip=${skip}&limit=${limit}`);
     
     if (!response.ok) {
       throw new Error(`API Error: ${response.statusText}`);
