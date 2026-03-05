@@ -1,31 +1,65 @@
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Navbar } from '@/app/components/Navbar';
-import { SearchModal } from '@/app/components/SearchModal';
-import { Hero } from '@/app/components/Hero';
-import { ProductCard } from '@/app/components/ProductCard';
-import { ProductDetailModal } from '@/app/components/ProductDetailModal';
-import { CartDrawer } from '@/app/components/CartDrawer';
 import { Footer } from '@/app/components/Footer';
 import type { Product, CartItem } from '@/app/data/products';
+import type { APIProduct } from '@/types/api';
 import { fetchProducts } from '@/lib/api-client';
 import { transformProduct } from '@/lib/transformers';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
+
+const SearchModal = lazy(() => import('@/app/components/SearchModal').then((mod) => ({ default: mod.SearchModal })));
+const ProductDetailModal = lazy(() => import('@/app/components/ProductDetailModal').then((mod) => ({ default: mod.ProductDetailModal })));
+const CartDrawer = lazy(() => import('@/app/components/CartDrawer').then((mod) => ({ default: mod.CartDrawer })));
+
+const HomePage = lazy(() => import('@/app/pages/HomePage').then((mod) => ({ default: mod.HomePage })));
+const ShopPage = lazy(() => import('@/app/pages/ShopPage').then((mod) => ({ default: mod.ShopPage })));
+const WishlistPage = lazy(() => import('@/app/pages/WishlistPage').then((mod) => ({ default: mod.WishlistPage })));
+const OrdersPage = lazy(() => import('@/app/pages/OrdersPage').then((mod) => ({ default: mod.OrdersPage })));
+const CheckoutPage = lazy(() => import('@/app/pages/CheckoutPage').then((mod) => ({ default: mod.CheckoutPage })));
+const AuthPage = lazy(() => import('@/app/pages/AuthPage').then((mod) => ({ default: mod.AuthPage })));
+const ProductDetailPage = lazy(() => import('@/app/pages/ProductDetailPage').then((mod) => ({ default: mod.ProductDetailPage })));
+const AboutPage = lazy(() => import('@/app/pages/AboutPage').then((mod) => ({ default: mod.AboutPage })));
+const ProfilePage = lazy(() => import('@/app/pages/ProfilePage').then((mod) => ({ default: mod.ProfilePage })));
+const AddressesPage = lazy(() => import('@/app/pages/AddressesPage').then((mod) => ({ default: mod.AddressesPage })));
+
+function normalizeHashPath(rawHash: string): string {
+  const path = rawHash.replace(/^#/, '') || '/';
+  const withLeadingSlash = path.startsWith('/') ? path : `/${path}`;
+  return withLeadingSlash.length > 1 ? withLeadingSlash.replace(/\/$/, '') : withLeadingSlash;
+}
 
 function App() {
+  const [routePath, setRoutePath] = useState(() => normalizeHashPath(window.location.hash));
   const [searchOpen, setSearchOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isAuthenticated } = useAuth();
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    const onHashChange = () => {
+      setRoutePath(normalizeHashPath(window.location.hash));
+      // Scroll to top on route change
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.addEventListener('hashchange', onHashChange);
+    if (!window.location.hash) {
+      window.location.hash = '#/';
+    }
+
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   useEffect(() => {
     async function loadProducts() {
       try {
-        console.log('Fetching products...');
         const apiProducts = await fetchProducts(1, 100);
-        console.log('Fetched products:', apiProducts);
         const transformed = apiProducts.map(transformProduct);
-        console.log('Transformed products:', transformed);
         setProducts(transformed);
       } catch (err) {
         console.error('Failed to load products', err);
@@ -35,6 +69,11 @@ function App() {
     }
     loadProducts();
   }, []);
+
+  const cartItemCount = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.quantity, 0),
+    [cartItems],
+  );
 
   const handleAddToCart = (product: Product, details: { quantity: number; selectedSize: string; selectedColor: string }) => {
     const newItem: CartItem = {
@@ -64,24 +103,106 @@ function App() {
 
     setSelectedProduct(null);
     setCartOpen(true);
+    showToast('Added to cart!', 'success');
   };
 
-  const handleUpdateQuantity = (id: string, quantity: number) => {
+  const handleAddToCartFromAPI = (product: APIProduct, details: { quantity: number; variantId: number }) => {
+    // Transform API product to Product format and add to cart
+    const variant = product.variants.find(v => v.id === details.variantId);
+    if (!variant) {
+      showToast('Variant not found', 'error');
+      return;
+    }
+
+    const transformedProduct = transformProduct(product);
+    const cartItem: CartItem = {
+      ...transformedProduct,
+      quantity: details.quantity,
+      selectedSize: variant.size || '',
+      selectedColor: variant.color || '',
+    };
+
+    setCartItems((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) =>
+          item.id === cartItem.id &&
+          item.selectedSize === cartItem.selectedSize &&
+          item.selectedColor === cartItem.selectedColor
+      );
+
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        updated[existingIndex].quantity += cartItem.quantity;
+        return updated;
+      }
+
+      return [...prev, cartItem];
+    });
+
+    setCartOpen(true);
+  };
+
+  const handleUpdateQuantity = (itemKey: string, quantity: number) => {
     if (quantity < 1) {
-      handleRemoveFromCart(id);
+      handleRemoveFromCart(itemKey);
       return;
     }
 
     setCartItems((prev) =>
       prev.map((item) =>
-        item.id === id ? { ...item, quantity } : item
+        `${item.id}-${item.selectedSize}-${item.selectedColor}` === itemKey
+          ? { ...item, quantity }
+          : item
       )
     );
   };
 
-  const handleRemoveFromCart = (id: string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  const handleRemoveFromCart = (itemKey: string) => {
+    setCartItems((prev) =>
+      prev.filter((item) => `${item.id}-${item.selectedSize}-${item.selectedColor}` !== itemKey),
+    );
   };
+
+  function renderRoute() {
+    // Extract product ID from hash if it's a product detail route
+    const productMatch = routePath.match(/^\/product\/(.+)$/);
+    if (productMatch) {
+      return <ProductDetailPage productId={productMatch[1]} onAddToCart={handleAddToCartFromAPI} />;
+    }
+
+    switch (routePath) {
+      case '/':
+        return <HomePage products={products} loading={loading} onQuickView={setSelectedProduct} />;
+      case '/shop':
+        return <ShopPage products={products} loading={loading} onQuickView={setSelectedProduct} />;
+      case '/wishlist':
+        return <WishlistPage />;
+      case '/orders':
+        return <OrdersPage />;
+      case '/checkout':
+        return <CheckoutPage items={cartItems} />;
+      case '/auth':
+      case '/login':
+      case '/signup':
+        return <AuthPage />;
+      case '/about':
+        return <AboutPage />;
+      case '/profile':
+        return <ProfilePage />;
+      case '/addresses':
+        return <AddressesPage />;
+      default:
+        return (
+          <section className="container mx-auto px-6 py-16 md:py-24">
+            <h1 className="font-headline mb-4">Page Not Found</h1>
+            <p className="text-muted mb-6">The page you are looking for does not exist.</p>
+            <a href="#/" className="inline-block bg-foreground text-white px-6 py-3 rounded-[var(--radius-sm)] hover:bg-accent transition-colors">
+              Back to Home
+            </a>
+          </section>
+        );
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -97,180 +218,41 @@ function App() {
       <Navbar
         onSearchOpen={() => setSearchOpen(true)}
         onCartOpen={() => setCartOpen(true)}
-        cartItemCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+        cartItemCount={cartItemCount}
       />
 
       {/* Main Content */}
       <main id="main-content" className="flex-1">
-        {/* Hero Section */}
-        <Hero
-          variant="full-bleed"
-          image="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600&q=90"
-          heading="Spring Collection 2026"
-          subheading="Discover our latest arrivals crafted with timeless elegance and modern sensibility"
-          ctaText="Explore Collection"
-          ctaHref="#collection"
-        />
-
-        {/* Featured Collections */}
-        <section className="container mx-auto px-6 py-16 md:py-24">
-          <div className="text-center mb-12">
-            <h2 className="font-headline mb-4">Featured Collections</h2>
-            <p className="text-lg text-muted max-w-2xl mx-auto">
-              Curated pieces that embody quiet luxury and effortless sophistication
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-            {['Evening', 'Essentials', 'Knitwear'].map((collection) => (
-              <a
-                key={collection}
-                href={`#collection/${collection.toLowerCase()}`}
-                className="group relative aspect-[3/4] rounded-[var(--radius-lg)] overflow-hidden"
-              >
-                <img
-                  src={
-                    collection === 'Evening'
-                      ? 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=800&q=90'
-                      : collection === 'Essentials'
-                      ? 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=90'
-                      : 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=800&q=90'
-                  }
-                  alt={collection}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[var(--motion-major)]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                <div className="absolute bottom-8 left-8 right-8 text-white">
-                  <h3 className="font-headline text-3xl mb-2">{collection}</h3>
-                  <p className="text-small opacity-90">
-                    {collection === 'Evening' && 'Elegant pieces for special occasions'}
-                    {collection === 'Essentials' && 'Timeless wardrobe foundations'}
-                    {collection === 'Knitwear' && 'Luxurious knits for every season'}
-                  </p>
-                </div>
-              </a>
-            ))}
-          </div>
-        </section>
-
-        {/* Product Grid */}
-        <section id="collection" className="bg-secondary py-16 md:py-24">
-          <div className="container mx-auto px-6">
-            <div className="flex items-center justify-between mb-12">
-              <h2 className="font-headline">New Arrivals</h2>
-              <div className="flex items-center gap-4">
-                <span className="text-small text-muted hidden md:inline">
-                  {products.length} Products
-                </span>
-                <select className="px-6 py-3 bg-white/40 backdrop-blur-xl border border-white/60 rounded-full text-foreground text-small font-medium cursor-pointer hover:bg-white/60 hover:border-white/80 transition-all duration-[var(--motion-micro)] appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjMTExMDE0IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[right_1rem_center] bg-no-repeat pr-10 shadow-sm focus:outline-none focus:ring-0 focus:border-white/80">
-                  <option>Featured</option>
-                  <option>Price: Low to High</option>
-                  <option>Price: High to Low</option>
-                  <option>Newest</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {loading ? (
-                // Skeleton Loader
-                Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="space-y-4 animate-pulse">
-                    <div className="aspect-[3/4] bg-secondary/50 rounded-[var(--radius-lg)]" />
-                    <div className="space-y-2">
-                      <div className="h-4 bg-secondary/50 rounded w-3/4" />
-                      <div className="h-4 bg-secondary/50 rounded w-1/4" />
-                    </div>
-                  </div>
-                ))
-              ) : (
-                products.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onQuickView={setSelectedProduct}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Editorial Section */}
-        <Hero
-          variant="image-right"
-          image="https://images.unsplash.com/photo-1487412912498-0447578fcca8?w=800&q=90"
-          heading="Crafted for the Modern Woman"
-          subheading="Every piece in our collection is thoughtfully designed and ethically produced. We believe in quality over quantity, creating garments that last beyond seasons."
-          ctaText="Our Story"
-          ctaHref="#about"
-        />
-
-        {/* Values Section */}
-        <section className="container mx-auto px-6 py-16 md:py-24">
-          <div className="grid md:grid-cols-3 gap-12">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center">
-                <svg className="w-8 h-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-medium mb-2">Quality Craftsmanship</h3>
-              <p className="text-muted">
-                Each garment is meticulously crafted using the finest materials and traditional techniques
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center">
-                <svg className="w-8 h-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-medium mb-2">Sustainable Practices</h3>
-              <p className="text-muted">
-                We're committed to ethical production and environmental responsibility at every step
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center">
-                <svg className="w-8 h-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-medium mb-2">Thoughtful Design</h3>
-              <p className="text-muted">
-                Timeless pieces designed to transcend trends and become cherished wardrobe staples
-              </p>
-            </div>
-          </div>
-        </section>
+        <Suspense fallback={<div className="container mx-auto px-6 py-16 text-muted">Loading...</div>}>
+          {renderRoute()}
+        </Suspense>
       </main>
 
       {/* Footer */}
       <Footer />
 
       {/* Modals & Overlays (rendered as portals) */}
-      <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
-      
-      <ProductDetailModal
-        product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
-        onAddToCart={(details) => {
-          if (selectedProduct) {
-            handleAddToCart(selectedProduct, details);
-          }
-        }}
-      />
+      <Suspense fallback={null}>
+        <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} products={products} />
 
-      <CartDrawer
-        isOpen={cartOpen}
-        onClose={() => setCartOpen(false)}
-        items={cartItems}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemove={handleRemoveFromCart}
-      />
+        <ProductDetailModal
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onAddToCart={(details) => {
+            if (selectedProduct) {
+              handleAddToCart(selectedProduct, details);
+            }
+          }}
+        />
+
+        <CartDrawer
+          isOpen={cartOpen}
+          onClose={() => setCartOpen(false)}
+          items={cartItems}
+          onUpdateQuantity={handleUpdateQuantity}
+          onRemove={handleRemoveFromCart}
+        />
+      </Suspense>
     </div>
   );
 }

@@ -4,11 +4,6 @@ export function Footer() {
   return (
     <footer className="bg-foreground text-white py-16 md:py-24">
       <div className="container mx-auto px-6">
-        <div className="mb-12 pb-8 border-b border-white/20">
-          <a href="#home" className="h-16 w-40 inline-flex items-center" aria-label="Womanly Home">
-            <img src="/LOGO.png" alt="Womanly" className="max-h-full max-w-full object-contain invert" />
-          </a>
-        </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           {/* Newsletter */}
           <div className="md:col-span-2">
@@ -37,23 +32,23 @@ export function Footer() {
             <h4 className="text-nav mb-4">Shop</h4>
             <ul className="space-y-3">
               <li>
-                <a href="#new-arrivals" className="text-white/70 hover:text-white transition-colors">
+                <a href="#/shop" className="text-white/70 hover:text-white transition-colors">
                   New Arrivals
                 </a>
               </li>
               <li>
-                <a href="#collections" className="text-white/70 hover:text-white transition-colors">
+                <a href="#/shop" className="text-white/70 hover:text-white transition-colors">
                   Collections
                 </a>
               </li>
               <li>
-                <a href="#sale" className="text-white/70 hover:text-white transition-colors">
+                <a href="#/shop" className="text-white/70 hover:text-white transition-colors">
                   Sale
                 </a>
               </li>
               <li>
-                <a href="#gift-cards" className="text-white/70 hover:text-white transition-colors">
-                  Gift Cards
+                <a href="#/checkout" className="text-white/70 hover:text-white transition-colors">
+                  Checkout
                 </a>
               </li>
             </ul>
@@ -64,12 +59,12 @@ export function Footer() {
             <h4 className="text-nav mb-4">About</h4>
             <ul className="space-y-3">
               <li>
-                <a href="#our-story" className="text-white/70 hover:text-white transition-colors">
+                <a href="#/orders" className="text-white/70 hover:text-white transition-colors">
                   Our Story
                 </a>
               </li>
               <li>
-                <a href="#sustainability" className="text-white/70 hover:text-white transition-colors">
+                <a href="#/wishlist" className="text-white/70 hover:text-white transition-colors">
                   Sustainability
                 </a>
               </li>
@@ -96,7 +91,7 @@ export function Footer() {
             <a href="#terms" className="text-small text-white/70 hover:text-white transition-colors">
               Terms of Service
             </a>
-            <a href="#shipping" className="text-small text-white/70 hover:text-white transition-colors">
+            <a href="#/checkout" className="text-small text-white/70 hover:text-white transition-colors">
               Shipping & Returns
             </a>
           </div>

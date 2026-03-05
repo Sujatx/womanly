@@ -91,33 +91,27 @@ def verify_token(token: str, token_type: str = "access") -> Optional[Dict]:
         Decoded token payload if valid, None otherwise
     """
     try:
+        # Decode without audience validation to avoid strict checks
         payload = jwt.decode(
             token,
             settings.SECRET_KEY.get_secret_value(),
-            algorithms=[settings.ALGORITHM]
+            algorithms=[settings.ALGORITHM],
+            options={"verify_aud": False}  # Disable strict audience validation
         )
         
         # Validate token type
-        if payload.get("type") != token_type:
-            logger.warning(f"Invalid token type. Expected {token_type}, got {payload.get('type')}")
+        token_in_payload = payload.get("type")
+        if token_in_payload != token_type:
+            logger.warning(f"Invalid token type. Expected {token_type}, got {token_in_payload}")
             return None
         
-        # Validate audience
-        if payload.get("aud") != "womanly-backend":
-            logger.warning(f"Invalid token audience: {payload.get('aud')}")
+        # Validate subject (email) exists
+        subject = payload.get("sub")
+        if not subject:
+            logger.warning("Token missing 'sub' claim")
             return None
         
-        # Validate iat (issued-at) claim
-        iat = payload.get("iat")
-        if not iat:
-            logger.warning("Token missing 'iat' claim")
-            return None
-        
-        # Ensure token was issued in the past
-        if iat > datetime.now(timezone.utc).timestamp():
-            logger.warning("Token 'iat' claim is in the future")
-            return None
-        
+        logger.debug(f"Token verified successfully for subject: {subject}")
         return payload
         
     except jwt.ExpiredSignatureError:

@@ -27,16 +27,22 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], session: Ses
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        logger.info(f"Validating token: {token[:20]}...")
         # Verify token with proper claim validation
         payload = verify_access_token(token)
         if not payload:
+            logger.warning("Token validation failed: payload is None")
             raise credentials_exception
         
         email: str = payload.get("sub")
         if email is None:
+            logger.warning("Token validation failed: missing 'sub' claim")
             raise credentials_exception
+        
+        logger.info(f"Token validated for email: {email}")
             
-    except JWTError:
+    except JWTError as e:
+        logger.warning(f"JWT validation error: {str(e)}")
         raise credentials_exception
     
     # Check if token is blacklisted (revoked)

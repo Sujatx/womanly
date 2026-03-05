@@ -20,8 +20,11 @@ class Settings(BaseSettings):
         description="Comma-separated list of allowed CORS origins"
     )
     CORS_ALLOW_CREDENTIALS: bool = Field(default=True, description="Allow credentials in CORS requests")
-    CORS_ALLOW_METHODS: list = Field(default=["GET", "POST", "PUT", "DELETE"], description="Allowed HTTP methods")
-    CORS_ALLOW_HEADERS: list = Field(default=["Content-Type", "Authorization"], description="Allowed headers")
+    CORS_ALLOW_METHODS: list = Field(default=["*"], description="Allowed HTTP methods")
+    CORS_ALLOW_HEADERS: list = Field(
+        default=["*"], 
+        description="Allowed headers - use * for development, restrict in production"
+    )
     
     # Secret provider configuration
     SECRETS_PROVIDER_TYPE: str = Field(default="env", description="Type of secret provider: env, aws, vault, azure")

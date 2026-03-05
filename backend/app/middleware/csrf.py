@@ -20,7 +20,18 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
     - Validates CSRF tokens on state-changing requests (POST/PUT/DELETE)
     """
     
-    EXCLUDED_PATHS = {"/health", "/"}  # Paths that don't need CSRF protection
+    EXCLUDED_PATHS = {
+        "/health", 
+        "/", 
+        "/api/v1/auth/signup",
+        "/api/v1/auth/login",
+        "/api/v1/auth/verify-email",
+        "/auth/signup",
+        "/auth/login",
+        "/auth/verify-email",
+        "/docs",
+        "/openapi.json"
+    }  # Paths that don't need CSRF protection
     STATE_CHANGING_METHODS = {"POST", "PUT", "DELETE", "PATCH"}
     
     async def dispatch(self, request: Request, call_next) -> Response:
@@ -29,7 +40,13 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             return response
         
-        # For state-changing requests, validate CSRF token
+        # Skip CSRF check for authenticated requests (Bearer token provides CSRF protection)
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            response = await call_next(request)
+            return response
+        
+        # For state-changing requests without auth, validate CSRF token
         csrf_token = request.headers.get("X-CSRF-Token")
         
         if not csrf_token:

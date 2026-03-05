@@ -57,9 +57,6 @@ export function ProductDetailModal({ product, onClose, onAddToCart }: ProductDet
       selectedSize,
       selectedColor,
     });
-
-    // Show success message (could be enhanced with toast)
-    alert('Added to cart!');
   };
 
   const nextImage = () => {
@@ -121,6 +118,7 @@ export function ProductDetailModal({ product, onClose, onAddToCart }: ProductDet
                       <img
                         src={product.images[selectedImageIndex]}
                         alt={`${product.name} - Image ${selectedImageIndex + 1}`}
+                        decoding="async"
                         className="w-full h-full object-cover"
                       />
                       
@@ -161,6 +159,8 @@ export function ProductDetailModal({ product, onClose, onAddToCart }: ProductDet
                             <img
                               src={img}
                               alt={`${product.name} thumbnail ${idx + 1}`}
+                              loading="lazy"
+                              decoding="async"
                               className="w-full h-full object-cover"
                             />
                           </button>

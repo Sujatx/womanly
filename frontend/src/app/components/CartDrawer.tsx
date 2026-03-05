@@ -7,8 +7,8 @@ interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   items: CartItem[];
-  onUpdateQuantity: (id: string, quantity: number) => void;
-  onRemove: (id: string) => void;
+  onUpdateQuantity: (itemKey: string, quantity: number) => void;
+  onRemove: (itemKey: string) => void;
 }
 
 export function CartDrawer({ isOpen, onClose, items, onUpdateQuantity, onRemove }: CartDrawerProps) {
@@ -105,6 +105,8 @@ export function CartDrawer({ isOpen, onClose, items, onUpdateQuantity, onRemove 
                         <img
                           src={item.images[0]}
                           alt={item.name}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -123,7 +125,7 @@ export function CartDrawer({ isOpen, onClose, items, onUpdateQuantity, onRemove 
                         <div className="flex items-center gap-3">
                           <div className="flex items-center border border-border rounded-[var(--radius-sm)]">
                             <button
-                              onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                              onClick={() => onUpdateQuantity(`${item.id}-${item.selectedSize}-${item.selectedColor}`, item.quantity - 1)}
                               className="p-2 hover:bg-secondary transition-colors"
                               aria-label="Decrease quantity"
                               disabled={item.quantity <= 1}
@@ -134,7 +136,7 @@ export function CartDrawer({ isOpen, onClose, items, onUpdateQuantity, onRemove 
                               {item.quantity}
                             </span>
                             <button
-                              onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                              onClick={() => onUpdateQuantity(`${item.id}-${item.selectedSize}-${item.selectedColor}`, item.quantity + 1)}
                               className="p-2 hover:bg-secondary transition-colors"
                               aria-label="Increase quantity"
                             >
@@ -142,7 +144,7 @@ export function CartDrawer({ isOpen, onClose, items, onUpdateQuantity, onRemove 
                             </button>
                           </div>
                           <button
-                            onClick={() => onRemove(item.id)}
+                            onClick={() => onRemove(`${item.id}-${item.selectedSize}-${item.selectedColor}`)}
                             className="text-small text-muted hover:text-destructive transition-colors"
                           >
                             Remove
@@ -167,7 +169,13 @@ export function CartDrawer({ isOpen, onClose, items, onUpdateQuantity, onRemove 
                 <p className="text-small text-muted">
                   Shipping and taxes calculated at checkout
                 </p>
-                <button className="w-full bg-foreground text-white py-4 rounded-[var(--radius-sm)] hover:bg-accent transition-colors duration-[var(--motion-micro)]">
+                <button 
+                  onClick={() => {
+                    onClose();
+                    window.location.hash = '#/checkout';
+                  }}
+                  className="w-full bg-foreground text-white py-4 rounded-[var(--radius-sm)] hover:bg-accent transition-colors duration-[var(--motion-micro)]"
+                >
                   Proceed to Checkout
                 </button>
                 <button

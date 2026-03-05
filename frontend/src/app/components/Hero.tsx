@@ -24,6 +24,8 @@ export function Hero({
           <img
             src={image}
             alt=""
+            loading="eager"
+            decoding="async"
             className="w-full h-full object-cover"
             aria-hidden="true"
           />
@@ -78,6 +80,8 @@ export function Hero({
             <img
               src={image}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover"
               aria-hidden="true"
             />

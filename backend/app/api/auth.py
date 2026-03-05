@@ -41,6 +41,11 @@ def get_csrf_token(session: Session = Depends(get_session)):
 
 @router.post("/signup", response_model=Token)
 async def signup(user_in: UserCreate, session: Session = Depends(get_session)):
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"Signup attempt for email: {user_in.email}")
+    
     user = session.exec(
         select(User).where(
             User.email == user_in.email,
@@ -48,6 +53,7 @@ async def signup(user_in: UserCreate, session: Session = Depends(get_session)):
         )
     ).first()
     if user:
+        logger.warning(f"Signup failed: User already exists - {user_in.email}")
         raise HTTPException(
             status_code=400,
             detail="The user with this email already exists in the system",
@@ -62,6 +68,7 @@ async def signup(user_in: UserCreate, session: Session = Depends(get_session)):
     session.add(user)
     session.commit()
     session.refresh(user)
+    logger.info(f"User created successfully: {user.email}")
     
     # Generate verification token
     token_str = str(uuid.uuid4())
@@ -72,13 +79,16 @@ async def signup(user_in: UserCreate, session: Session = Depends(get_session)):
     )
     session.add(verification_token)
     session.commit()
+    logger.info(f"Verification token created for: {user.email}")
     
-    # REAL: Send email via Mailtrap
+    # Send verification email
     try:
+        logger.info(f"Attempting to send verification email to: {user.email}")
         await send_verification_email(user.email, token_str)
+        logger.info(f"✅ Verification email sent successfully to: {user.email}")
     except Exception as e:
-        print(f"ERROR: Failed to send verification email: {e}")
-        # We don't fail signup if email fails, but we should log it
+        logger.error(f"❌ Failed to send verification email to {user.email}: {type(e).__name__}: {str(e)}")
+        # We don't fail signup if email fails, but we log it
     
     # Create tokens
     access_token = create_access_token(subject=user.email)
@@ -92,6 +102,7 @@ async def signup(user_in: UserCreate, session: Session = Depends(get_session)):
     )
     session.add(db_refresh_token)
     session.commit()
+    logger.info(f"Signup complete for: {user.email}")
     
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "user": user}
 
@@ -119,20 +130,108 @@ def verify_email(token: str, session: Session = Depends(get_session)):
     
     return {"status": "success", "message": "Email verified successfully"}
 
+@router.post("/resend-verification")
+async def resend_verification_email(current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+    """
+    Resend verification email to the current user.
+    
+    Returns:
+        Success message
+    
+    Raises:
+        400: If user is already verified
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    if current_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email is already verified"
+        )
+    
+    logger.info(f"Resending verification email for: {current_user.email}")
+    
+    # Generate new verification token
+    token_str = str(uuid.uuid4())
+    verification_token = EmailVerificationToken(
+        user_id=current_user.id,
+        token=token_str,
+        expires_at=datetime.utcnow() + timedelta(hours=24)
+    )
+    session.add(verification_token)
+    session.commit()
+    logger.info(f"New verification token created for: {current_user.email}")
+    
+    # Send verification email
+    try:
+        logger.info(f"Attempting to send verification email to: {current_user.email}")
+        await send_verification_email(current_user.email, token_str)
+        logger.info(f"✅ Verification email sent successfully to: {current_user.email}")
+        return {"status": "success", "message": "Verification email sent successfully"}
+    except Exception as e:
+        logger.error(f"❌ Failed to send verification email to {current_user.email}: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send verification email: {str(e)}"
+        )
+
+
 @router.post("/login", response_model=LoginResponse)
-def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], session: Session = Depends(get_session)):
+def login(credentials: LoginRequest, session: Session = Depends(get_session)):
     """
-    DEPRECATED: Use /login-email instead.
+    Login with email and password.
     
-    This endpoint uses OAuth2 form format. For security clarity, use the /login-email endpoint instead.
-    Accepts form data where field 'username' should contain the user email.
+    Accepts JSON with 'email' and 'password' fields.
+    
+    Args:
+        credentials: LoginRequest with 'email' and 'password'
+    
+    Returns:
+        LoginResponse with access_token, refresh_token, and user info
+    
+    Raises:
+        401: If email or password is incorrect or user is inactive
     """
-    user = session.exec(select(User).where(User.email == form_data.username)).first()
-    if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(status_code=400, detail="Incorrect email or password")
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    email = credentials.email.lower().strip()
+    logger.info(f"Login attempt for email: {email}")
+    
+    # Validate email format
+    if not email or '@' not in email:
+        logger.warning(f"Invalid email format: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email address"
+        )
+    
+    user = session.exec(select(User).where(User.email == email)).first()
+    if not user:
+        logger.warning(f"User not found: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
+    
+    logger.info(f"User found: {email}, checking password...")
+    # Verify password
+    if not verify_password(credentials.password, user.hashed_password):
+        logger.warning(f"Invalid password for user: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
+    
     if not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        logger.warning(f"Inactive user attempted login: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User account is inactive"
+        )
     
+    logger.info(f"Login successful for: {email}")
     # Create tokens
     access_token = create_access_token(subject=user.email)
     refresh_token = create_refresh_token(subject=user.email)
@@ -145,7 +244,7 @@ def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], session: S
     )
     session.add(db_refresh_token)
     session.commit()
-    
+
     return LoginResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer", user=user)
 
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Search, Heart, ShoppingBag, User, Menu, X } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NavbarProps {
   onSearchOpen: () => void;
@@ -9,6 +10,7 @@ interface NavbarProps {
 
 export function Navbar({ onSearchOpen, onCartOpen, cartItemCount }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   return (
     <header className="sticky top-0 bg-white border-b border-border z-[var(--z-header)]">
@@ -18,29 +20,29 @@ export function Navbar({ onSearchOpen, onCartOpen, cartItemCount }: NavbarProps)
           {/* Left: Navigation Links */}
           <div className="flex items-center gap-8">
             <a 
-              href="#shop" 
+              href="#/shop" 
               className="text-nav text-foreground hover:text-accent transition-colors duration-[var(--motion-micro)]"
             >
               Shop
             </a>
             <a 
-              href="#collections" 
+              href="#/wishlist" 
               className="text-nav text-foreground hover:text-accent transition-colors duration-[var(--motion-micro)]"
             >
-              Collections
+              Wishlist
             </a>
             <a 
-              href="#about" 
+              href="#/orders" 
               className="text-nav text-foreground hover:text-accent transition-colors duration-[var(--motion-micro)]"
             >
-              About
+              Orders
             </a>
           </div>
 
           {/* Center: Brand */}
           <div className="absolute left-1/2 -translate-x-1/2">
             <a 
-              href="#home" 
+              href="#/" 
               className="h-80 w-60 flex items-center justify-center"
               aria-label="Womanly Home"
             >
@@ -57,12 +59,13 @@ export function Navbar({ onSearchOpen, onCartOpen, cartItemCount }: NavbarProps)
             >
               <Search className="w-5 h-5" />
             </button>
-            <button
+            <a
+              href="#/wishlist"
               className="p-2 text-foreground hover:text-accent transition-colors duration-[var(--motion-micro)]"
               aria-label="Wishlist"
             >
               <Heart className="w-5 h-5" />
-            </button>
+            </a>
             <button
               onClick={onCartOpen}
               className="p-2 text-foreground hover:text-accent transition-colors duration-[var(--motion-micro)] relative"
@@ -75,12 +78,13 @@ export function Navbar({ onSearchOpen, onCartOpen, cartItemCount }: NavbarProps)
                 </span>
               )}
             </button>
-            <button
+            <a
+              href={isAuthenticated ? "#/profile" : "#/auth"}
               className="p-2 text-foreground hover:text-accent transition-colors duration-[var(--motion-micro)]"
-              aria-label="Account"
+              aria-label={isAuthenticated ? "Profile" : "Login"}
             >
               <User className="w-5 h-5" />
-            </button>
+            </a>
           </div>
         </div>
 
@@ -96,7 +100,7 @@ export function Navbar({ onSearchOpen, onCartOpen, cartItemCount }: NavbarProps)
           </button>
 
           <a 
-            href="#home" 
+            href="#/" 
             className="h-40 w-80 flex items-center justify-center"
             aria-label="Womanly Home"
           >
@@ -131,33 +135,37 @@ export function Navbar({ onSearchOpen, onCartOpen, cartItemCount }: NavbarProps)
           <div className="md:hidden py-6 border-t border-border">
             <div className="flex flex-col gap-6">
               <a 
-                href="#shop" 
+                href="#/shop" 
                 className="text-nav text-foreground"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Shop
               </a>
               <a 
-                href="#collections" 
+                href="#/wishlist" 
                 className="text-nav text-foreground"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Collections
+                Wishlist
               </a>
               <a 
-                href="#about" 
+                href="#/orders" 
                 className="text-nav text-foreground"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                About
+                Orders
               </a>
               <div className="pt-6 border-t border-border flex gap-6">
-                <button className="text-foreground" aria-label="Wishlist">
+                <a href="#/wishlist" className="text-foreground" aria-label="Wishlist">
                   <Heart className="w-5 h-5" />
-                </button>
-                <button className="text-foreground" aria-label="Account">
+                </a>
+                <a 
+                  href={isAuthenticated ? "#/profile" : "#/auth"}
+                  className="text-foreground" 
+                  aria-label={isAuthenticated ? "Profile" : "Login"}
+                >
                   <User className="w-5 h-5" />
-                </button>
+                </a>
               </div>
             </div>
           </div>

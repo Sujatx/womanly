@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Heart } from 'lucide-react';
 import { motion } from 'motion/react';
 import type { Product } from '@/app/data/products';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
+import { addToWishlist } from '@/lib/api-client';
 
 interface ProductCardProps {
   product: Product;
@@ -11,9 +14,39 @@ interface ProductCardProps {
 export function ProductCard({ product, onQuickView }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
+  const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const { showToast } = useToast();
 
   const displayPrice = product.salePrice || product.price;
   const hasDiscount = product.salePrice && product.salePrice < product.price;
+
+  const handleAddToWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      showToast('Please sign in to add items to your wishlist', 'error');
+      window.location.hash = '#/auth';
+      return;
+    }
+
+    setIsAddingToWishlist(true);
+    try {
+      console.log('[ProductCard] Adding to wishlist, product.id:', product.id);
+      await addToWishlist(Number(product.id));
+      showToast('Added to wishlist!', 'success');
+    } catch (error) {
+      console.error('[ProductCard] Wishlist error:', error);
+      const message = error instanceof Error ? error.message : 'Failed to add to wishlist';
+      // Don't show error if already redirecting to auth
+      if (!window.location.hash.includes('#/auth')) {
+        showToast(message, 'error');
+      }
+    } finally {
+      setIsAddingToWishlist(false);
+    }
+  };
 
   return (
     <article
@@ -35,7 +68,9 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
 
       {/* Wishlist Button */}
       <button
-        className="absolute top-3 right-3 z-10 p-2 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--motion-micro)] hover:bg-accent hover:text-white"
+        onClick={handleAddToWishlist}
+        disabled={isAddingToWishlist}
+        className="absolute top-3 right-3 z-10 p-2 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--motion-micro)] hover:bg-accent hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
         aria-label={`Add ${product.name} to wishlist`}
       >
         <Heart className="w-4 h-4" />
@@ -58,6 +93,8 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
               key={idx}
               src={img}
               alt={idx === 0 ? product.name : `${product.name} alternate view ${idx + 1}`}
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 w-full h-full object-cover"
               initial={{ opacity: idx === 0 ? 1 : 0 }}
               animate={{

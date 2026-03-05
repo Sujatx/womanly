@@ -41,16 +41,7 @@ app.middleware("http")(query_monitoring_middleware)
 # Add deprecation middleware to track legacy API usage
 app.middleware("http")(deprecation_middleware)
 
-# Add security headers middleware FIRST (before CORS)
-app.add_middleware(SecurityHeadersMiddleware)
-
-# Add CSRF protection middleware
-app.add_middleware(CSRFProtectionMiddleware)
-
-# Add request validation middleware
-app.add_middleware(RequestValidationMiddleware)
-
-# CORS Configuration - Restrict based on environment
+# CORS Configuration - Must be early to handle preflight requests
 cors_origins = settings.get_cors_origins()
 
 # Log CORS configuration (but not sensitive data)
@@ -66,6 +57,15 @@ app.add_middleware(
     allow_methods=settings.CORS_ALLOW_METHODS,
     allow_headers=settings.CORS_ALLOW_HEADERS,
 )
+
+# Add security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Add CSRF protection middleware (after CORS to allow preflight)
+app.add_middleware(CSRFProtectionMiddleware)
+
+# Add request validation middleware
+app.add_middleware(RequestValidationMiddleware)
 
 # ========== API VERSION 1 (Recommended) ==========
 app.include_router(v1_router)

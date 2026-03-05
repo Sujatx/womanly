@@ -1,25 +1,23 @@
 import ssl
 from email.message import EmailMessage
-from aiosmtplib import send
+from aiosmtplib import SMTP
 from app.config import settings
 
 async def send_email(subject: str, to: str, html_content: str):
-    """Core async email sender."""
+    """Core async email sender using aiosmtplib with automatic STARTTLS."""
     message = EmailMessage()
     message["From"] = settings.SMTP_FROM
     message["To"] = to
     message["Subject"] = subject
     message.add_alternative(html_content, subtype="html")
 
-    # Connect and send
-    await send(
-        message,
+    # Connect using SMTP context manager (handles STARTTLS automatically)
+    async with SMTP(
         hostname=settings.SMTP_HOST,
         port=settings.SMTP_PORT,
-        username=settings.SMTP_USER,
-        password=settings.SMTP_PASSWORD,
-        use_tls=settings.SMTP_PORT == 587,
-    )
+    ) as smtp:
+        await smtp.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+        await smtp.send_message(message)
 
 async def send_verification_email(email: str, token: str):
     """Sends the VEXO-styled verification email."""

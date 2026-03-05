@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, Search as SearchIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { products } from '@/app/data/products';
+import type { Product } from '@/app/data/products';
 
 interface SearchModalProps {
   isOpen: boolean;
   onClose: () => void;
+  products: Product[];
 }
 
-export function SearchModal({ isOpen, onClose }: SearchModalProps) {
+export function SearchModal({ isOpen, onClose, products }: SearchModalProps) {
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const [results, setResults] = useState(products.slice(0, 6));
@@ -57,7 +58,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, products]);
 
   return (
     <AnimatePresence>
@@ -144,6 +145,8 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                             <img
                               src={product.images[0]}
                               alt={product.name}
+                              loading="lazy"
+                              decoding="async"
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[var(--motion-major)]"
                             />
                           </div>
