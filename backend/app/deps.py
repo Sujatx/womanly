@@ -56,3 +56,30 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], session: Ses
     
     return user
 
+
+from fastapi.security import OAuth2PasswordBearer as _OAuth2Opt
+from typing import Optional as _Opt
+
+_oauth2_optional = _OAuth2Opt(tokenUrl="auth/login", auto_error=False)
+
+def get_current_user_optional(
+    token: _Opt[str] = Depends(_oauth2_optional),
+    session: Session = Depends(get_session),
+) -> _Opt[User]:
+    """
+    Like get_current_user but returns None instead of 401 for anonymous requests.
+    Used by endpoints that work for both authenticated and anonymous users.
+    """
+    if not token:
+        return None
+    try:
+        payload = verify_access_token(token)
+        if not payload:
+            return None
+        email: str = payload.get("sub")
+        if not email:
+            return None
+        user = session.exec(select(User).where(User.email == email, User.deleted_at.is_(None))).first()
+        return user
+    except Exception:
+        return None

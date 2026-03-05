@@ -179,3 +179,31 @@ def check_payment_verification_attempts(session: Session, order_id: int) -> bool
         return False
     
     return True
+
+
+def create_razorpay_refund(payment_id: str, amount: int, notes: dict = None) -> dict:
+    """
+    Issue a refund for a captured Razorpay payment.
+
+    Args:
+        payment_id: Razorpay payment ID to refund
+        amount: Amount to refund in the smallest currency unit (paise)
+        notes: Optional metadata for the refund
+
+    Returns:
+        Razorpay refund response dict
+    """
+    if not client:
+        raise RuntimeError("Razorpay client not initialized. Check credentials.")
+
+    data = {
+        "amount": amount,
+        "notes": notes or {},
+    }
+    try:
+        refund = client.payment.refund(payment_id, data)
+        logger.info(f"Razorpay refund created: {refund.get('id')} for payment {payment_id}")
+        return refund
+    except Exception as e:
+        logger.error(f"Razorpay refund failed for payment {payment_id}: {str(e)}")
+        raise e

@@ -65,3 +65,24 @@ async def send_order_confirmation(email: str, order_id: int, amount: float):
     </div>
     """
     await send_email(f"Order Confirmation #{order_id}", email, html)
+
+async def send_shipping_notification(email: str, order_id: int, tracking_number: str, provider: str):
+    """Sends shipping/tracking update notification to customer."""
+    html = f"""
+    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 24px;">
+        <h1 style="font-size: 24px; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase;">Womanly</h1>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+        <p style="font-size: 16px; font-weight: 600; color: #64748b;">YOUR ORDER HAS SHIPPED</p>
+        <p style="font-size: 14px; line-height: 1.6; color: #1e293b;">
+            Great news! Your order <strong>#{order_id}</strong> has been shipped via <strong>{provider.upper()}</strong>.
+        </p>
+        <div style="background: #f8fafc; padding: 20px; border-radius: 16px; margin: 20px 0;">
+            <p style="margin: 0; font-size: 12px; font-weight: 800; color: #64748b;">TRACKING NUMBER</p>
+            <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: 900; letter-spacing: 0.1em;">{tracking_number}</p>
+        </div>
+        <a href="http://localhost:3000/account/orders" style="display: inline-block; padding: 14px 28px; background: #0f172a; color: white; text-decoration: none; border-radius: 32px; font-weight: 900; font-size: 12px; text-transform: uppercase;">
+            TRACK ORDER
+        </a>
+    </div>
+    """
+    await send_email(f"Your Womanly Order #{order_id} has shipped!", email, html)

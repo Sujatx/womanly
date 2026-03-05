@@ -66,10 +66,14 @@ class UserBase(SQLModel):
 class User(UserBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     hashed_password: str
-    
+
     # Soft delete support
     deleted_at: Optional[datetime] = Field(default=None, index=True)
-    
+
+    # Customer tier & LTV for promotional discounts
+    tier: str = Field(default="regular", description="Customer tier: regular, silver, gold")
+    lifetime_value: float = Field(default=0.0, ge=0, description="Total spending (lifetime value)")
+
     addresses: List[Address] = Relationship(back_populates="user")
     
     def soft_delete(self):

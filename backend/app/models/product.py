@@ -36,7 +36,17 @@ class ProductVariant(SQLModel, table=True):
         ge=0,  # Must be >= 0
         description="Stock quantity"
     )
+    reserved_quantity: int = Field(
+        default=0,
+        ge=0,
+        description="Quantity currently reserved (pending payments)"
+    )
     is_available: bool = Field(default=True)
+
+    @property
+    def available_stock(self) -> int:
+        """Actual stock available for new orders (stock minus reservations)."""
+        return max(0, self.stock_quantity - self.reserved_quantity)
     
     product: "Product" = Relationship(back_populates="variants")
     

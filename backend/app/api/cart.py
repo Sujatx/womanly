@@ -58,6 +58,21 @@ def add_to_cart(
         session.commit()
         session.refresh(cart)
         cart = get_cart_with_items(session, current_user.id)
+
+    # Phase 3: validate variant availability before adding
+    variant = session.get(ProductVariant, item_in.variant_id)
+    if not variant:
+        raise HTTPException(status_code=404, detail="Variant not found")
+    if not variant.is_available:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Variant '{variant.sku}' is not available."
+        )
+    if variant.available_stock < item_in.quantity:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Insufficient stock for variant '{variant.sku}'. Available: {variant.available_stock}."
+        )
         
     # Check if this specific variant exists in cart
     existing_item = next((i for i in cart.items if i.variant_id == item_in.variant_id), None)

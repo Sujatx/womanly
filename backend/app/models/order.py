@@ -34,6 +34,15 @@ class Order(SQLModel, table=True):
     razorpay_order_id: Optional[str] = None
     razorpay_payment_id: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    # Order financials
+    shipping_cost: float = Field(default=0.0, ge=0, description="Shipping cost")
+    tax_amount: float = Field(default=0.0, ge=0, description="Tax collected")
+    discount_amount: float = Field(default=0.0, ge=0, description="Coupon/discount applied")
+
+    # Shipping tracking
+    shipping_provider: Optional[str] = Field(default=None, description="e.g. 'dhl', 'fedex', 'local'")
+    tracking_number: Optional[str] = Field(default=None)
     
     # Timestamps for tracking order lifecycle
     paid_at: Optional[datetime] = None
@@ -64,7 +73,7 @@ class Order(SQLModel, table=True):
             raise ValueError(f'status must be one of {allowed_statuses}')
         return v
     
-    def update_status(self, new_status: str, updated_by: Optional[int] = None, notes: Optional[str] = None):
+    def update_status(self, new_status: str, updated_by: Optional[int] = None, notes: Optional[str] = None, session=None):
         """
         Update order status with state machine validation.
         
@@ -101,7 +110,19 @@ class Order(SQLModel, table=True):
         # Update status
         old_status = self.status
         self.status = new_status
-        
+
+        # Write OrderStatusHistory record if session provided
+        if session is not None:
+            from app.models.refund import OrderStatusHistory
+            history = OrderStatusHistory(
+                order_id=self.id,
+                from_status=old_status,
+                to_status=new_status,
+                updated_by=updated_by,
+                notes=notes,
+            )
+            session.add(history)
+
         # Update lifecycle timestamps
         now = datetime.now(timezone.utc)
         if new_status == "paid":
