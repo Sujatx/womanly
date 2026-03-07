@@ -152,3 +152,5 @@ temp/
 upgrade.md
 backend/alembic.err
 backend/test_*.py
+backend/check_user.py
+backend/clear_users.py

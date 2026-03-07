@@ -20,6 +20,28 @@ export function ProfilePage() {
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    async function refreshCurrentUser() {
+      try {
+        const latestUser = await apiRequest<{
+          id: number;
+          email: string;
+          full_name: string;
+          is_verified: boolean;
+        }>('/auth/me');
+        updateUser(latestUser);
+      } catch (error) {
+        console.error('[Profile] Failed to refresh user state:', error);
+      }
+    }
+
+    refreshCurrentUser();
+  }, [isAuthenticated]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement profile update API call
@@ -50,7 +72,7 @@ export function ProfilePage() {
         method: 'POST',
       });
       console.log('[Profile] Success! Response:', response);
-      showToast('Verification email sent! Check your Mailtrap inbox.', 'success');
+      showToast('Verification email sent! Check your email inbox.', 'success');
     } catch (error) {
       console.error('[Profile] ERROR caught:', error);
       console.error('[Profile] Error type:', error instanceof Error ? error.constructor.name : typeof error);

@@ -19,4 +19,34 @@ export default defineConfig({
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
+  
+  build: {
+    // Optimize chunk size
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        // Manual chunks for better caching
+        manualChunks: {
+          // React vendor chunk
+          'react-vendor': ['react', 'react-dom'],
+          // Animation libraries
+          'animations': ['framer-motion'],
+          // Icons
+          'icons': ['lucide-react'],
+        },
+      },
+    },
+    // Enable source maps for production debugging
+    sourcemap: false,
+    minify: 'esbuild',
+    esbuild: {
+      drop: ['console', 'debugger'],
+    },
+  },
+  
+  // Preview server config (for production preview)
+  preview: {
+    port: 5173,
+    strictPort: true,
+  },
 })

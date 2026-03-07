@@ -12,3 +12,5 @@ python-multipart
 email-validator
 aiosmtplib
 bleach
+redis
+sentry-sdk[fastapi]

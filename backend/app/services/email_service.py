@@ -2,6 +2,9 @@ import ssl
 from email.message import EmailMessage
 from aiosmtplib import SMTP
 from app.config import settings
+from app.core.logging import get_structured_logger
+
+logger = get_structured_logger(__name__)
 
 async def send_email(subject: str, to: str, html_content: str):
     """Core async email sender using aiosmtplib with automatic STARTTLS."""
@@ -21,9 +24,10 @@ async def send_email(subject: str, to: str, html_content: str):
 
 async def send_verification_email(email: str, token: str):
     """Sends the VEXO-styled verification email."""
-    # Note: In production, this would be a real URL. 
-    # For now, it's the frontend verification link.
-    verify_url = f"http://localhost:3000/auth/verify?token={token}"
+    # Use configurable frontend URL for verification link
+    verify_url = f"{settings.FRONTEND_URL}/#/auth/verify?token={token}"
+    
+    logger.info(f"Sending verification email to {email} with link: {verify_url}")
     
     html = f"""
     <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 24px;">

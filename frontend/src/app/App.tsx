@@ -18,13 +18,16 @@ const WishlistPage = lazy(() => import('@/app/pages/WishlistPage').then((mod) =>
 const OrdersPage = lazy(() => import('@/app/pages/OrdersPage').then((mod) => ({ default: mod.OrdersPage })));
 const CheckoutPage = lazy(() => import('@/app/pages/CheckoutPage').then((mod) => ({ default: mod.CheckoutPage })));
 const AuthPage = lazy(() => import('@/app/pages/AuthPage').then((mod) => ({ default: mod.AuthPage })));
+const VerifyEmailPage = lazy(() => import('@/app/pages/VerifyEmailPage').then((mod) => ({ default: mod.VerifyEmailPage })));
 const ProductDetailPage = lazy(() => import('@/app/pages/ProductDetailPage').then((mod) => ({ default: mod.ProductDetailPage })));
 const AboutPage = lazy(() => import('@/app/pages/AboutPage').then((mod) => ({ default: mod.AboutPage })));
 const ProfilePage = lazy(() => import('@/app/pages/ProfilePage').then((mod) => ({ default: mod.ProfilePage })));
 const AddressesPage = lazy(() => import('@/app/pages/AddressesPage').then((mod) => ({ default: mod.AddressesPage })));
 
 function normalizeHashPath(rawHash: string): string {
-  const path = rawHash.replace(/^#/, '') || '/';
+  const hashWithoutPrefix = rawHash.replace(/^#/, '') || '/';
+  const pathOnly = hashWithoutPrefix.split('?')[0] || '/';
+  const path = pathOnly;
   const withLeadingSlash = path.startsWith('/') ? path : `/${path}`;
   return withLeadingSlash.length > 1 ? withLeadingSlash.replace(/\/$/, '') : withLeadingSlash;
 }
@@ -185,6 +188,8 @@ function App() {
       case '/login':
       case '/signup':
         return <AuthPage />;
+      case '/auth/verify':
+        return <VerifyEmailPage />;
       case '/about':
         return <AboutPage />;
       case '/profile':

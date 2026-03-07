@@ -5,6 +5,7 @@ import type { Product } from '@/app/data/products';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { addToWishlist } from '@/lib/api-client';
+import { ResponsiveImage } from '@/app/components/ResponsiveImage';
 
 interface ProductCardProps {
   product: Product;
@@ -89,12 +90,8 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
       >
         <div className="relative aspect-[4/5] bg-secondary overflow-hidden">
           {product.images.map((img, idx) => (
-            <motion.img
+            <motion.div
               key={idx}
-              src={img}
-              alt={idx === 0 ? product.name : `${product.name} alternate view ${idx + 1}`}
-              loading="lazy"
-              decoding="async"
               className="absolute inset-0 w-full h-full object-cover"
               initial={{ opacity: idx === 0 ? 1 : 0 }}
               animate={{
@@ -108,7 +105,14 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
               onMouseEnter={() => {
                 if (idx > 0 && isHovered) setImageIndex(idx);
               }}
-            />
+            >
+              <ResponsiveImage
+                src={img}
+                alt={idx === 0 ? product.name : `${product.name} alternate view ${idx + 1}`}
+                className="w-full h-full object-cover"
+                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              />
+            </motion.div>
           ))}
 
           {/* Out of stock overlay */}

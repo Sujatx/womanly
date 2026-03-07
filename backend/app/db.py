@@ -23,6 +23,16 @@ engine = create_engine(
     pool_pre_ping=True,  # Test connections before using
 )
 
+# Optional read replica engine (falls back to primary URL if READ_DATABASE_URL is not set)
+read_engine = create_engine(
+    settings.sync_read_database_url,
+    echo=settings.ENV_NAME == "dev",
+    pool_size=POOL_SIZE,
+    max_overflow=MAX_OVERFLOW,
+    pool_recycle=POOL_RECYCLE,
+    pool_pre_ping=True,
+)
+
 logger.info(
     "Database engine configured",
     pool_size=POOL_SIZE,
@@ -33,6 +43,11 @@ logger.info(
 
 def get_session():
     with Session(engine) as session:
+        yield session
+
+
+def get_read_session():
+    with Session(read_engine) as session:
         yield session
 
 def get_pool_status():

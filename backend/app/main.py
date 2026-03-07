@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from app.config import settings
 from app.api import products, auth, cart, payments, addresses, health, admin
 from app.api.v1 import v1_router
@@ -11,6 +12,25 @@ from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.csrf import CSRFProtectionMiddleware
 from app.middleware.validation import RequestValidationMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
+from app.middleware.cache_headers import CacheControlMiddleware
+
+# Initialize Sentry for error monitoring (optional, only if DSN is configured)
+if settings.SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+    
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.SENTRY_ENVIRONMENT,
+        traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
+        integrations=[
+            FastApiIntegration(),
+            SqlalchemyIntegration(),
+        ],
+        # Send user context in errors
+        send_default_pii=False,  # Don't send PII by default
+    )
 
 # Initialize structured logging first
 setup_logging()
@@ -31,6 +51,12 @@ def on_startup():
         )
     
     logger.info("Application startup complete", environment=settings.ENV_NAME)
+
+# Add Gzip compression (compress responses > 500 bytes)
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
+# Add Cache-Control headers
+app.add_middleware(CacheControlMiddleware)
 
 # Add rate limiting middleware - early in chain
 app.add_middleware(RateLimitMiddleware)

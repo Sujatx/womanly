@@ -2,12 +2,13 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlmodel import Session, select, col, func, SQLModel
 from sqlalchemy.orm import selectinload
-from app.db import get_session
+from app.db import get_read_session
 from app.models import Product, Category
 from app.models.product import ProductVariant, ProductImage
 from app.models.search import SearchLog
 from app.deps import get_current_user_optional
 from app.core.logging import get_structured_logger
+from app.services.cache_service import CacheService
 
 router = APIRouter()
 logger = get_structured_logger(__name__)
@@ -108,8 +109,8 @@ def _log_search(session: Session, query: str, results_count: int, user_id: Optio
 
 
 @router.get("/", response_model=ProductList)
-def get_products(
-    session: Session = Depends(get_session),
+async def get_products(
+    session: Session = Depends(get_read_session),
     skip: int = Query(default=0, ge=MIN_SKIP, le=MAX_SKIP),
     limit: int = Query(default=DEFAULT_LIMIT, ge=MIN_LIMIT, le=MAX_LIMIT),
     category: Optional[str] = None,
@@ -119,6 +120,21 @@ def get_products(
     in_stock: Optional[bool] = None,
     current_user=Depends(get_current_user_optional),
 ):
+    # PHASE 4: Check cache for unfiltered queries (improves response time for common cases)
+    has_filters = bool(category or q or min_price is not None or max_price is not None or in_stock is not None)
+    if not has_filters:
+        cached_data = await CacheService.get_cached_products(skip, limit)
+        if cached_data:
+            logger.info(f"✓ Cache HIT: products (skip={skip}, limit={limit})")
+            data = cached_data.get("data", [])
+            total = cached_data.get("total", len(data))
+            has_more = (skip + limit) < total
+            return ProductList(
+                data=[ProductDetail(**item) for item in data],
+                pagination=PaginationMeta(total=total, skip=skip, limit=limit, has_more=has_more)
+            )
+
+    # Cache miss or filtered query: fetch from database
     query = select(Product).options(
         selectinload(Product.variants),
         selectinload(Product.product_images)
@@ -151,6 +167,12 @@ def get_products(
         user_id = current_user.id if current_user else None
         _log_search(session, q, total, user_id)
 
+    # PHASE 4: Cache results only for unfiltered queries
+    if not has_filters and len(results) > 0:
+        cache_data = [_build_product_detail(p).dict() for p in results]
+        await CacheService.set_cached_products(skip, limit, cache_data, total)
+        logger.info(f"✓ Cached products (skip={skip}, limit={limit})")
+
     has_more = (skip + limit) < total
 
     return ProductList(
@@ -168,7 +190,7 @@ def search_products(
     in_stock: Optional[bool] = None,
     skip: int = Query(default=0, ge=MIN_SKIP, le=MAX_SKIP),
     limit: int = Query(default=DEFAULT_LIMIT, ge=MIN_LIMIT, le=MAX_LIMIT),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_read_session),
     current_user=Depends(get_current_user_optional),
 ):
     """
@@ -213,7 +235,7 @@ def search_products(
 
 
 @router.get("/{product_id}", response_model=ProductDetail)
-def get_product(product_id: int, session: Session = Depends(get_session)):
+def get_product(product_id: int, session: Session = Depends(get_read_session)):
     statement = select(Product).where(
         Product.id == product_id,
         Product.deleted_at.is_(None)
@@ -228,7 +250,7 @@ def get_product(product_id: int, session: Session = Depends(get_session)):
 
 
 @router.get("/{product_id}/available-variants", response_model=List[ProductVariantRead])
-def get_available_variants(product_id: int, session: Session = Depends(get_session)):
+def get_available_variants(product_id: int, session: Session = Depends(get_read_session)):
     """Return only available (in-stock, is_available=True) variants for a product."""
     product = session.exec(
         select(Product).where(
@@ -253,5 +275,14 @@ def get_available_variants(product_id: int, session: Session = Depends(get_sessi
 
 
 @router.get("/categories", response_model=List[Category])
-def get_categories(session: Session = Depends(get_session)):
-    return session.exec(select(Category)).all()
+async def get_categories(session: Session = Depends(get_read_session)):
+    cached_categories = await CacheService.get_cached_categories()
+    if cached_categories:
+        logger.info("✓ Cache HIT: categories")
+        return [Category(**item) for item in cached_categories]
+
+    categories = session.exec(select(Category)).all()
+    if categories:
+        await CacheService.set_cached_categories([category.model_dump() for category in categories])
+        logger.info("✓ Cached categories")
+    return categories

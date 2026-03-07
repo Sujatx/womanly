@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
     DATABASE_URL: str | None = None
+    READ_DATABASE_URL: str | None = None
+    
+    REDIS_URL: str = Field(default="redis://localhost:6379/0", description="Redis connection URL")
 
     SECRET_KEY: SecretStr
     ALGORITHM: str = "HS256"
@@ -33,11 +36,20 @@ class Settings(BaseSettings):
     RAZORPAY_KEY_ID: SecretStr = Field(default=SecretStr(""), description="Razorpay API Key ID")
     RAZORPAY_KEY_SECRET: SecretStr = Field(default=SecretStr(""), description="Razorpay API Key Secret")
 
+    # Frontend URL for email links (verification, password reset)
+    FRONTEND_URL: str = Field(default="http://localhost:3000", description="Frontend base URL for email links")
+    
+    # SMTP Configuration
     SMTP_HOST: str = "smtp.example.com"
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = "noreply@womanly.com"
+    
+    # Sentry Error Monitoring
+    SENTRY_DSN: str = Field(default="", description="Sentry DSN for error tracking")
+    SENTRY_ENVIRONMENT: str = Field(default="dev", description="Sentry environment name")
+    SENTRY_TRACES_SAMPLE_RATE: float = Field(default=1.0, description="Sentry performance monitoring sample rate (0.0 to 1.0)")
 
     class Config:
         env_file = ".env"
@@ -47,6 +59,13 @@ class Settings(BaseSettings):
         if self.DATABASE_URL:
             return self.DATABASE_URL
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@db:5432/{self.POSTGRES_DB}"
+
+    @property
+    def sync_read_database_url(self) -> str:
+        # Fall back to primary when no dedicated read replica is configured.
+        if self.READ_DATABASE_URL:
+            return self.READ_DATABASE_URL
+        return self.sync_database_url
     
     def get_cors_origins(self) -> list:
         """Parse CORS origins from environment variable."""
@@ -65,7 +84,7 @@ class Settings(BaseSettings):
         """Determine if a field is sensitive (secrets should never be logged)."""
         sensitive_fields = {
             "SECRET_KEY", "RAZORPAY_KEY_SECRET", "RAZORPAY_KEY_ID", "SMTP_PASSWORD", 
-            "POSTGRES_PASSWORD", "access_token", "refresh_token"
+            "POSTGRES_PASSWORD", "access_token", "refresh_token", "SENTRY_DSN"
         }
         return "***REDACTED***" if field_name in sensitive_fields else "visible"
 

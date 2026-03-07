@@ -17,7 +17,17 @@ const API_URL = RAW_API_URL.endsWith('/api/v1') ? RAW_API_URL : `${RAW_API_URL}/
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function getRetryCount(method: string): number {
-  return method.toUpperCase() === 'GET' ? 3 : 1;
+  return method.toUpperCase() === 'GET' ? 3 : 0;
+}
+
+function isRetryableStatus(status: number): boolean {
+  return [408, 429, 500, 502, 503, 504].includes(status);
+}
+
+function calculateBackoff(attempt: number, baseMs = 1000, maxMs = 8000): number {
+  const exponential = Math.min(baseMs * Math.pow(2, attempt), maxMs);
+  const jitter = exponential * 0.1 * Math.random();
+  return exponential + jitter;
 }
 
 export function getAuthToken(): string | null {
@@ -65,7 +75,7 @@ export async function apiRequest<T>(
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     try {
-      console.log(`[API] ${method} ${API_URL}${path}`, options.body ? JSON.parse(options.body as string) : '');
+      console.log(`[API] ${method} ${API_URL}${path} (attempt ${attempt + 1}/${retries + 1})`, options.body ? JSON.parse(options.body as string) : '');
       
       const response = await fetch(`${API_URL}${path}`, {
         ...options,
@@ -75,8 +85,11 @@ export async function apiRequest<T>(
       console.log(`[API] Response ${response.status}`, response.statusText);
 
       if (!response.ok) {
-        if (response.status >= 500 && attempt < retries) {
-          await sleep(1000 * 2 ** attempt);
+        // Retry on retryable server errors
+        if (isRetryableStatus(response.status) && attempt < retries) {
+          const backoffMs = calculateBackoff(attempt);
+          console.warn(`[API] Retryable error ${response.status}, retrying in ${backoffMs}ms`);
+          await sleep(backoffMs);
           continue;
         }
         
@@ -115,9 +128,17 @@ export async function apiRequest<T>(
     } catch (error) {
       console.error(`[API] Request failed:`, error);
       lastError = error;
-      if (attempt < retries) {
-        await sleep(1000 * 2 ** attempt);
+      
+      // Network errors - retry with backoff
+      if (attempt < retries && error instanceof Error && !error.message.includes('Unauthorized')) {
+        const backoffMs = calculateBackoff(attempt);
+        console.warn(`[API] Network error, retrying in ${backoffMs}ms`);
+        await sleep(backoffMs);
+        continue;
       }
+      
+      // Don't retry on other errors
+      throw error;
     }
   }
 
@@ -170,6 +191,60 @@ export async function fetchProduct(id: string): Promise<APIProduct | null> {
   } catch {
     return null;
   }
+}
+
+export async function batchFetchProducts(
+  productIds: number[],
+  options: { includeVariants?: boolean; includeImages?: boolean } = {}
+): Promise<APIProduct[]> {
+  if (productIds.length === 0) return [];
+  
+  try {
+    const response = await apiRequest<{ products: APIProduct[]; not_found: number[] }>(
+      '/batch/products',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          product_ids: productIds,
+          include_variants: options.includeVariants ?? true,
+          include_images: options.includeImages ?? true,
+        }),
+      }
+    );
+    return response.products;
+  } catch {
+    return [];
+  }
+}
+
+export interface BatchAddressValidationResult {
+  index: number;
+  is_valid: boolean;
+  errors: string[];
+}
+
+export async function batchValidateAddresses(
+  addresses: Array<{
+    full_name: string;
+    phone: string;
+    address_line1: string;
+    address_line2?: string;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+  }>,
+): Promise<BatchAddressValidationResult[]> {
+  if (addresses.length === 0) return [];
+
+  const response = await apiRequest<{ results: BatchAddressValidationResult[] }>(
+    '/batch/addresses',
+    {
+      method: 'POST',
+      body: JSON.stringify({ addresses }),
+    },
+  );
+  return response.results;
 }
 
 export async function fetchWishlist(): Promise<APIWishlist | null> {

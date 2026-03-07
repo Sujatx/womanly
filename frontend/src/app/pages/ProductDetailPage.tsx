@@ -4,6 +4,7 @@ import { fetchProduct, addToWishlist } from '@/lib/api-client';
 import type { APIProduct } from '@/types/api';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { ResponsiveImage } from '@/app/components/ResponsiveImage';
 
 interface ProductDetailPageProps {
   productId: string;
@@ -120,10 +121,12 @@ export function ProductDetailPage({ productId, onAddToCart }: ProductDetailPageP
           <div className="relative aspect-[4/5] bg-secondary rounded-[var(--radius-lg)] overflow-hidden mb-4">
             {images.length > 0 ? (
               <>
-                <img
+                <ResponsiveImage
                   src={images[selectedImageIndex]?.image_url || product.thumbnail || ''}
                   alt={images[selectedImageIndex]?.alt_text || product.title}
                   className="w-full h-full object-cover"
+                  loading="eager"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                 />
                 {images.length > 1 && (
                   <>
@@ -162,10 +165,11 @@ export function ProductDetailPage({ productId, onAddToCart }: ProductDetailPageP
                     selectedImageIndex === idx ? 'border-accent' : 'border-transparent'
                   }`}
                 >
-                  <img
+                  <ResponsiveImage
                     src={img.image_url}
                     alt={img.alt_text || `Thumbnail ${idx + 1}`}
                     className="w-full h-full object-cover"
+                    sizes="120px"
                   />
                 </button>
               ))}

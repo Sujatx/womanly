@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { X, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { Product, CartItem } from '@/app/data/products';
+import { ResponsiveImage } from '@/app/components/ResponsiveImage';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -115,11 +116,12 @@ export function ProductDetailModal({ product, onClose, onAddToCart }: ProductDet
                   <div>
                     {/* Main Image */}
                     <div className="relative aspect-[4/5] bg-secondary rounded-[var(--radius-md)] overflow-hidden mb-4">
-                      <img
+                      <ResponsiveImage
                         src={product.images[selectedImageIndex]}
                         alt={`${product.name} - Image ${selectedImageIndex + 1}`}
-                        decoding="async"
+                        loading="eager"
                         className="w-full h-full object-cover"
+                        sizes="(max-width: 1024px) 100vw, 50vw"
                       />
                       
                       {/* Navigation Arrows */}
@@ -156,12 +158,11 @@ export function ProductDetailModal({ product, onClose, onAddToCart }: ProductDet
                                 : 'border-transparent hover:border-border'
                             }`}
                           >
-                            <img
+                            <ResponsiveImage
                               src={img}
                               alt={`${product.name} thumbnail ${idx + 1}`}
-                              loading="lazy"
-                              decoding="async"
                               className="w-full h-full object-cover"
+                              sizes="120px"
                             />
                           </button>
                         ))}
