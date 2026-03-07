@@ -7,117 +7,88 @@ Modern e-commerce platform with FastAPI backend and React frontend.
 **Backend:**
 - FastAPI 0.115+ with async/await
 - PostgreSQL 15 with SQLModel ORM
+- Redis 7 for caching
 - Alembic database migrations
-- JWT Authentication (HS256, Argon2 hashing)
-- Email verification & SMTP (Mailtrap)
-- CORS & CSRF middleware
-- Razorpay Payment Gateway
+- JWT auth with refresh/logout flows
+- Resend SMTP for verification emails
+- Sentry error monitoring
 
 **Frontend:**
-- React 18 with TypeScript
-- Vite 6 build tool
-- Tailwind CSS 4 with custom theme
-- Framer Motion animations
-- Hash-based routing (#/)
-- TailwindCSS UI components
+- React 18 + TypeScript
+- Vite 6 + Tailwind CSS 4
+- Hash-based routing (`#/...`)
+- Lazy-loaded route/components
+- PWA basics (service worker + manifest)
 
-**Features:**
-- User authentication (signup/login/logout)
-- Email verification with token expiry
-- Product catalog with search & filtering
-- Shopping cart (client-side)
-- Wishlist functionality
-- User profile management
-- Order management system
-- Responsive mobile-friendly UI
-
-## Quick Start
+## Production Deployment
 
 ### Prerequisites
-- Python 3.10+
-- Node.js 18+
-- PostgreSQL 15 (or use Docker)
 
-### Local Development
+- Docker and Docker Compose
+- PostgreSQL and Redis endpoints
+- Resend API key and verified sender domain
+- Sentry project DSN
 
-**Backend:**
-```bash
-cd backend
-python -m venv .venv
-.venv\Scripts\activate  # Windows
-source .venv/bin/activate  # macOS/Linux
-
-pip install -r requirements.txt
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-**Frontend:**
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-**Database Setup:**
-```bash
-cd backend
-alembic upgrade head  # Run migrations
-python scripts/seed.py  # Seed sample data
-```
-
-### Docker Deployment
+### Container Start
 
 ```bash
+# create .env from template and set real secrets first
+# cp .env.example .env
+
 docker compose up --build -d
-docker-compose exec backend alembic upgrade head
-docker-compose exec backend python scripts/seed.py
+docker compose exec backend alembic upgrade head
 ```
 
-### Access Points
-- **Frontend:** http://localhost:5173
-- **Backend API:** http://localhost:8000
-- **API Docs (Swagger):** http://localhost:8000/docs
-- **API Docs (ReDoc):** http://localhost:8000/redoc
+### Runtime Endpoints
 
-## Configuration
+- Frontend: `https://yourdomain.com`
+- Backend API: `https://api.yourdomain.com`
+- Swagger: `https://api.yourdomain.com/docs`
+- ReDoc: `https://api.yourdomain.com/redoc`
 
-### Backend Environment Variables
+## Production Configuration
 
-Create `backend/.env` file:
+Create `backend/.env` with production values:
 
 ```env
-# Database
-POSTGRES_USER=user
-POSTGRES_PASSWORD=password
+# Core
+ENV_NAME=prod
+POSTGRES_USER=replace_me
+POSTGRES_PASSWORD=replace_me
 POSTGRES_DB=womanly
-DATABASE_URL=postgresql://user:password@db:5432/womanly
+DATABASE_URL=postgresql://replace_me:replace_me@db-host:5432/womanly
+READ_DATABASE_URL=postgresql://replace_me:replace_me@read-replica-host:5432/womanly
+REDIS_URL=redis://redis-host:6379/0
 
-# Security
-SECRET_KEY=your_secure_32_character_secret_key_here
+# Auth/Security
+SECRET_KEY=replace_with_32_plus_random_chars
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+CORS_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 
-# Email Configuration (Mailtrap)
-SMTP_HOST=sandbox.smtp.mailtrap.io
-SMTP_PORT=2525
-SMTP_USER=your_mailtrap_username
-SMTP_PASSWORD=your_mailtrap_password
-SMTP_FROM=noreply@womanly.com
+# Frontend URL used in email verification links
+FRONTEND_URL=https://yourdomain.com
 
-# Payment Gateway (Optional)
-RAZORPAY_KEY_ID=your_razorpay_key_id
-RAZORPAY_KEY_SECRET=your_razorpay_secret_key
+# SMTP (Resend)
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=587
+SMTP_USER=resend
+SMTP_PASSWORD=re_replace_with_resend_api_key
+SMTP_FROM=noreply@yourdomain.com
 
-# CORS
-CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+# Monitoring
+SENTRY_DSN=https://replace_me.ingest.sentry.io/replace_me
+SENTRY_ENVIRONMENT=prod
+SENTRY_TRACES_SAMPLE_RATE=0.1
+
+# Optional payments
+RAZORPAY_KEY_ID=replace_me
+RAZORPAY_KEY_SECRET=replace_me
 ```
 
-### API Authentication
-
-The API uses JWT Bearer tokens for authentication:
+## API Auth Example
 
 ```bash
-# Signup
 curl -X POST http://localhost:8000/api/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{
@@ -125,19 +96,12 @@ curl -X POST http://localhost:8000/api/v1/auth/signup \
     "password":"securepassword",
     "full_name":"User Name"
   }'
-
-# Login
-curl -X POST http://localhost:8000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email":"user@example.com",
-    "password":"securepassword"
-  }'
-
-# Use returned access_token in subsequent requests
-curl -X GET http://localhost:8000/api/v1/products \
-  -H "Authorization: Bearer <your_access_token>"
 ```
+
+## Notes
+
+- Verification links use hash routes: `#/auth/verify?token=...`
+- Use a verified sender domain in Resend for production deliverability.
 
 ## License
 
