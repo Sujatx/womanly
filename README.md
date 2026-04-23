@@ -20,71 +20,63 @@ Modern e-commerce platform with FastAPI backend and React frontend.
 - Lazy-loaded route/components
 - PWA basics (service worker + manifest)
 
-## Production Deployment
+## Production Deployment (Phase 5 Baseline)
 
 ### Prerequisites
 
-- Docker and Docker Compose
-- PostgreSQL and Redis endpoints
-- Resend API key and verified sender domain
-- Sentry project DSN
+- Docker Engine with Compose v2
+- Production DNS and TLS termination in front of containers
+- Access to a container registry (Docker Hub, ECR, GHCR, etc.)
 
-### Container Start
+### 1) Prepare production env
+
+- Copy .env.prod.example to .env.prod
+- Set non-secret values in .env.prod
+- Place secret values in files under secrets/
+
+Required secret files:
+
+- secrets/postgres_password.txt
+- secrets/secret_key.txt
+- secrets/smtp_password.txt
+- secrets/sentry_dsn.txt
+- secrets/razorpay_key_id.txt
+- secrets/razorpay_key_secret.txt
+
+### 2) Start production stack
 
 ```bash
-# create .env from template and set real secrets first
-# cp .env.example .env
-
-docker compose up --build -d
-docker compose exec backend alembic upgrade head
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
 ```
 
-### Runtime Endpoints
+### 3) Runtime endpoints (default ports)
 
-- Frontend: `https://yourdomain.com`
-- Backend API: `https://api.yourdomain.com`
-- Swagger: `https://api.yourdomain.com/docs`
-- ReDoc: `https://api.yourdomain.com/redoc`
+- Frontend: http://localhost:8080
+- Backend API: http://localhost:8000
+- Swagger: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
 
-## Production Configuration
+### Production artifacts added
 
-Create `backend/.env` with production values:
+- backend/Dockerfile.prod (multi-stage, health check, non-root)
+- backend/docker/entrypoint.prod.sh (loads Docker secret files into env)
+- frontend/Dockerfile.prod + frontend/nginx.prod.conf
+- docker-compose.prod.yml (versioned image tags, secrets files, health checks)
+- .github/workflows/ci-cd.yml (PR checks, image build, staging/prod deploy placeholders)
+- scripts/backup_db.ps1 and scripts/restore_db.ps1
 
-```env
-# Core
-ENV_NAME=prod
-POSTGRES_USER=replace_me
-POSTGRES_PASSWORD=replace_me
-POSTGRES_DB=womanly
-DATABASE_URL=postgresql://replace_me:replace_me@db-host:5432/womanly
-READ_DATABASE_URL=postgresql://replace_me:replace_me@read-replica-host:5432/womanly
-REDIS_URL=redis://redis-host:6379/0
+### Database backup and restore
 
-# Auth/Security
-SECRET_KEY=replace_with_32_plus_random_chars
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-CORS_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+```powershell
+# Backup (keeps 30-day chain by default)
+powershell -ExecutionPolicy Bypass -File ./scripts/backup_db.ps1 -EnvFilePath ./.env.prod
 
-# Frontend URL used in email verification links
-FRONTEND_URL=https://yourdomain.com
-
-# SMTP (Resend)
-SMTP_HOST=smtp.resend.com
-SMTP_PORT=587
-SMTP_USER=resend
-SMTP_PASSWORD=re_replace_with_resend_api_key
-SMTP_FROM=noreply@yourdomain.com
-
-# Monitoring
-SENTRY_DSN=https://replace_me.ingest.sentry.io/replace_me
-SENTRY_ENVIRONMENT=prod
-SENTRY_TRACES_SAMPLE_RATE=0.1
-
-# Optional payments
-RAZORPAY_KEY_ID=replace_me
-RAZORPAY_KEY_SECRET=replace_me
+# Restore from a specific backup file
+powershell -ExecutionPolicy Bypass -File ./scripts/restore_db.ps1 -BackupFile ./backups/womanly_YYYYMMDD_HHMMSS.sqlc -EnvFilePath ./.env.prod
 ```
+
+Use task scheduler or CI cron to run backup_db.ps1 daily, then upload artifacts to encrypted object storage (S3/GCS/Azure Blob).
 
 ## API Auth Example
 

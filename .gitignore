@@ -142,7 +142,7 @@ GEMINI.md
 *.key
 *.crt
 *.p12
-secrets/
+secrets/*.txt
 .secrets/
 
 # Temporary Testing
@@ -154,3 +154,6 @@ backend/alembic.err
 backend/test_*.py
 backend/check_user.py
 backend/clear_users.py
+skills/
+secrets/
+report.md

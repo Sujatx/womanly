@@ -1,0 +1,104 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    image: womanly-backend:${APP_VERSION:-v1.0.0}
+    restart: unless-stopped
+    env_file:
+      - ./.env.prod
+    environment:
+      ENV_NAME: prod
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      DATABASE_URL: ${DATABASE_URL}
+      READ_DATABASE_URL: ${READ_DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 15
+      FRONTEND_URL: ${FRONTEND_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_FROM: ${SMTP_FROM}
+      SECRET_KEY_FILE: /run/secrets/secret_key
+      SMTP_PASSWORD_FILE: /run/secrets/smtp_password
+      SENTRY_DSN_FILE: /run/secrets/sentry_dsn
+      RAZORPAY_KEY_ID_FILE: /run/secrets/razorpay_key_id
+      RAZORPAY_KEY_SECRET_FILE: /run/secrets/razorpay_key_secret
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    secrets:
+      - postgres_password
+      - secret_key
+      - smtp_password
+      - sentry_dsn
+      - razorpay_key_id
+      - razorpay_key_secret
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    image: womanly-frontend:${APP_VERSION:-v1.0.0}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    secrets:
+      - postgres_password
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres_data:
+  redis_data:
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt
+  secret_key:
+    file: ./secrets/secret_key.txt
+  smtp_password:
+    file: ./secrets/smtp_password.txt
+  sentry_dsn:
+    file: ./secrets/sentry_dsn.txt
+  razorpay_key_id:
+    file: ./secrets/razorpay_key_id.txt
+  razorpay_key_secret:
+    file: ./secrets/razorpay_key_secret.txt
