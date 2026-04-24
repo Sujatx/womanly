@@ -137,6 +137,15 @@ GEMINI.md
 *.temp
 .scratch/
 
+# Internal planning/progress docs (local only)
+END_TO_END_BUILD_PLAN.md
+IMAGE_TAGGING_POLICY.md
+PRD_IMPLEMENTATION_CHECKLIST.md
+Skills/
+docs/ops/alerts/
+docs/ops/metrics-dashboard-queries.md
+docs/ops/release-evidence-template.md
+
 # Security & Secrets
 *.pem
 *.key
@@ -154,6 +163,7 @@ backend/alembic.err
 backend/test_*.py
 backend/check_user.py
 backend/clear_users.py
-skills/
+
 secrets/
-report.md
+# report.md
+# skills/

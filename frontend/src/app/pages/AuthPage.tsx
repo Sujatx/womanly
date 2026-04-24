@@ -73,11 +73,11 @@ export function AuthPage() {
   };
 
   return (
-    <section className="container mx-auto px-6 py-16 md:py-24">
+    <section className="container mx-auto px-4 sm:px-6 py-16 md:py-24">
       <div className="max-w-md mx-auto">
         <div className="mb-10 text-center">
           <p className="text-small text-muted uppercase tracking-wide">Account</p>
-          <h1 className="font-headline text-4xl mb-4">{isLogin ? 'Welcome Back' : 'Create Account'}</h1>
+          <h1 className="font-headline mb-4">{isLogin ? 'Welcome Back' : 'Create Account'}</h1>
           <p className="text-muted">
             {isLogin ? "Don't have an account? " : 'Already have an account? '}
             <button

@@ -70,14 +70,14 @@ export function VerifyEmailPage() {
   }, [showToast]);
 
   return (
-    <section className="container mx-auto px-6 py-16 md:py-24 flex items-center justify-center min-h-[60vh]">
+    <section className="container mx-auto px-4 sm:px-6 py-16 md:py-24 flex items-center justify-center min-h-[60vh]">
       <div className="max-w-md w-full text-center">
         {status === 'loading' && (
           <>
             <div className="mb-6 flex justify-center">
               <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-foreground"></div>
             </div>
-            <h1 className="font-headline text-2xl md:text-3xl mb-4">Verifying Your Email</h1>
+            <h1 className="font-headline mb-4">Verifying Your Email</h1>
             <p className="text-muted">Please wait while we verify your email address...</p>
           </>
         )}
@@ -99,12 +99,12 @@ export function VerifyEmailPage() {
                 />
               </svg>
             </div>
-            <h1 className="font-headline text-2xl md:text-3xl mb-4 text-green-700">Email Verified!</h1>
+            <h1 className="font-headline mb-4 text-green-700">Email Verified!</h1>
             <p className="text-muted mb-6">{message}</p>
             <p className="text-sm text-muted">Redirecting you to login...</p>
             <a 
               href="#/auth" 
-              className="mt-4 inline-block bg-foreground text-white px-8 py-3 rounded-[var(--radius-sm)] font-bold hover:bg-accent transition-colors"
+              className="mt-4 inline-block w-full sm:w-auto bg-foreground text-white px-8 py-3 rounded-[var(--radius-sm)] font-bold hover:bg-accent transition-colors"
             >
               Go to Login
             </a>
@@ -128,12 +128,12 @@ export function VerifyEmailPage() {
                 />
               </svg>
             </div>
-            <h1 className="font-headline text-2xl md:text-3xl mb-4 text-red-700">Verification Failed</h1>
+            <h1 className="font-headline mb-4 text-red-700">Verification Failed</h1>
             <p className="text-muted mb-6">{message}</p>
             <div className="space-y-3">
               <a 
                 href="#/auth" 
-                className="block bg-foreground text-white px-8 py-3 rounded-[var(--radius-sm)] font-bold hover:bg-accent transition-colors"
+                className="block w-full bg-foreground text-white px-8 py-3 rounded-[var(--radius-sm)] font-bold hover:bg-accent transition-colors"
               >
                 Back to Login
               </a>

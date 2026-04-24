@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Product } from '@/app/data/products';
 import { ProductCard } from '@/app/components/ProductCard';
 
@@ -11,7 +11,16 @@ interface ShopPageProps {
 export function ShopPage({ products, loading, onQuickView }: ShopPageProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  const categories = ['all', 'Evening', 'Essentials', 'Knitwear', 'Dresses', 'Tops'];
+  const categories = useMemo(
+    () => ['all', ...new Set(products.map((product) => product.collection))],
+    [products],
+  );
+
+  useEffect(() => {
+    if (selectedCategory !== 'all' && !categories.includes(selectedCategory)) {
+      setSelectedCategory('all');
+    }
+  }, [categories, selectedCategory]);
   
   const filteredProducts = selectedCategory === 'all' 
     ? products 

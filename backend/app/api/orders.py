@@ -6,7 +6,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Path, status
 from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
-from pydantic import BaseModel, Field as PydanticField
+from pydantic import BaseModel, ConfigDict, Field as PydanticField
 
 from app.db import get_session
 from app.deps import get_current_user
@@ -46,8 +46,7 @@ class OrderStatusHistoryRead(BaseModel):
     notes: Optional[str]
     timestamp: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ─────────────────────────── Helpers ───────────────────────────
@@ -68,12 +67,19 @@ def _get_order_or_404(session: Session, order_id: int, user_id: int) -> Order:
 def _restore_inventory(session: Session, order: Order, user_id: int) -> None:
     """Restore stock for every item in the order."""
     for item in order.items:
-        # Fetch the variant
+        # Prefer direct lookup first for legacy rows that may already carry a variant-like id.
         variant = session.get(ProductVariant, item.product_id)
-        # item.product_id is the product_id; we stored product_id not variant_id.
-        # We need to look up the variant via the order's original checkout data.
-        # Fall back: query variant for this product + order to do best-effort restore.
-        # Since OrderItem stores product_id (not variant_id), we look for qty restore.
+
+        # OrderItem currently stores product_id, not variant_id.
+        # Fall back to the first variant for this product so stock is still restored.
+        if not variant:
+            variant_stmt = (
+                select(ProductVariant)
+                .where(ProductVariant.product_id == item.product_id)
+                .order_by(ProductVariant.id)
+            )
+            variant = session.exec(variant_stmt).first()
+
         if variant:
             refund_stock_for_order(
                 session=session,

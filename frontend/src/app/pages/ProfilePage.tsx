@@ -99,16 +99,16 @@ export function ProfilePage() {
   }
 
   return (
-    <section className="container mx-auto px-6 py-16 md:py-24">
+    <section className="container mx-auto px-4 sm:px-6 py-16 md:py-24">
       <div className="max-w-4xl mx-auto">
         <div className="mb-10">
           <p className="text-small text-muted uppercase tracking-wide">Account</p>
-          <h1 className="font-headline text-4xl">My Profile</h1>
+          <h1 className="font-headline">My Profile</h1>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Sidebar */}
-          <aside className="space-y-2">
+          <aside className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-2">
             <a
               href="#/profile"
               className="flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] bg-accent/10 text-accent"
@@ -147,10 +147,10 @@ export function ProfilePage() {
           </aside>
 
           {/* Main Content */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             <div className="rounded-[var(--radius-lg)] border border-border bg-white p-6 md:p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-medium">Personal Information</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+                <h2 className="font-headline">Personal Information</h2>
                 {!isEditing && (
                   <button
                     onClick={() => setIsEditing(true)}
@@ -217,7 +217,7 @@ export function ProfilePage() {
 
                   <div>
                     <p className="text-sm text-muted mb-1">Email</p>
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       <div className="flex-1">
                         <p className="text-lg">{user.email}</p>
                         {user.is_verified ? (
@@ -236,6 +236,7 @@ export function ProfilePage() {
                         <button
                           onClick={handleResendVerification}
                           disabled={isSendingVerification}
+                          type="button"
                           className="px-4 py-2 bg-accent text-white rounded-[var(--radius-sm)] hover:bg-accent/90 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isSendingVerification ? 'Sending...' : 'Verify Email'}
@@ -249,7 +250,7 @@ export function ProfilePage() {
 
             {/* Additional Sections */}
             <div className="mt-6 rounded-[var(--radius-lg)] border border-border bg-white p-6 md:p-8">
-              <h2 className="text-2xl font-medium mb-6">Account Security</h2>
+              <h2 className="font-headline mb-6">Account Security</h2>
               <div className="space-y-4">
                 <div className="flex items-center justify-between py-3 border-b border-border">
                   <div>

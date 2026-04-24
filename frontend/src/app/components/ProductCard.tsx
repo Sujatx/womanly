@@ -51,7 +51,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
 
   return (
     <article
-      className="group relative bg-white rounded-[var(--radius-md)] overflow-hidden"
+      className="group relative surface-panel rounded-[var(--radius-md)] overflow-hidden"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false);
@@ -61,7 +61,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
       {/* Badge */}
       {product.badge && (
         <div className="absolute top-3 left-3 z-10">
-          <span className="inline-block bg-white px-3 py-1 rounded-[var(--radius-sm)] text-small font-medium uppercase tracking-wide shadow-[var(--shadow-soft)]">
+          <span className="inline-block surface-chip px-3 py-1 rounded-[var(--radius-sm)] text-small font-medium uppercase tracking-wide">
             {product.badge}
           </span>
         </div>
@@ -71,7 +71,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
       <button
         onClick={handleAddToWishlist}
         disabled={isAddingToWishlist}
-        className="absolute top-3 right-3 z-10 p-2 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--motion-micro)] hover:bg-accent hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        className="absolute top-3 right-3 z-10 p-2 surface-chip rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--motion-micro)] hover:bg-accent hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
         aria-label={`Add ${product.name} to wishlist`}
       >
         <Heart className="w-4 h-4" />

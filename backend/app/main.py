@@ -2,12 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from app.config import settings
-from app.api import products, auth, cart, payments, addresses, health, admin
+from app.api import health, admin, metrics
 from app.api.v1 import v1_router
 from app.core.logging import setup_logging, get_structured_logger
 from app.core.error_handler import add_error_handlers
 from app.core.versioning import deprecation_middleware, get_api_version_info
 from app.core.query_monitor import query_monitoring_middleware
+from app.middleware.metrics import metrics_middleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.csrf import CSRFProtectionMiddleware
 from app.middleware.validation import RequestValidationMiddleware
@@ -64,7 +65,10 @@ app.add_middleware(RateLimitMiddleware)
 # Add query monitoring middleware (development only)
 app.middleware("http")(query_monitoring_middleware)
 
-# Add deprecation middleware to track legacy API usage
+# Add metrics middleware for request throughput, latency, and error rates
+app.middleware("http")(metrics_middleware)
+
+# Add deprecation middleware to flag unexpected non-versioned requests
 app.middleware("http")(deprecation_middleware)
 
 # CORS Configuration - Must be early to handle preflight requests
@@ -102,14 +106,10 @@ app.include_router(admin.router, tags=["admin"])
 # ========== HEALTH CHECK ENDPOINTS ==========
 app.include_router(health.router, tags=["health"])
 
-# ========== LEGACY ROUTES (Deprecated - will be removed 2027-03-01) ==========
-# These routes are maintained for backward compatibility but are deprecated.
-# Please migrate to /api/v1/* routes.
-app.include_router(products.router, tags=["products-legacy"])
-app.include_router(auth.router, prefix="/auth", tags=["auth-legacy"])
-app.include_router(cart.router, prefix="/cart", tags=["cart-legacy"])
-app.include_router(payments.router, prefix="/payments", tags=["payments-legacy"])
-app.include_router(addresses.router, prefix="/addresses", tags=["addresses-legacy"])
+# ========== METRICS ENDPOINT ==========
+app.include_router(metrics.router, tags=["metrics"])
+
+
 
 @app.get("/")
 def read_root():

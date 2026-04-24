@@ -1,5 +1,5 @@
 from pydantic import SecretStr, Field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
 from app.services.secrets_provider import get_secret_provider
 
@@ -51,8 +51,7 @@ class Settings(BaseSettings):
     SENTRY_ENVIRONMENT: str = Field(default="dev", description="Sentry environment name")
     SENTRY_TRACES_SAMPLE_RATE: float = Field(default=1.0, description="Sentry performance monitoring sample rate (0.0 to 1.0)")
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env")
 
     @property
     def sync_database_url(self) -> str:

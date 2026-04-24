@@ -7,9 +7,28 @@ import json
 import logging
 import sys
 import traceback
-from datetime import datetime
+from contextvars import ContextVar, Token
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 from app.config import settings
+
+
+_request_id_ctx_var: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
+
+
+def set_request_id(request_id: str) -> Token[Optional[str]]:
+    """Set request ID in logging context and return token for reset."""
+    return _request_id_ctx_var.set(request_id)
+
+
+def reset_request_id(token: Token[Optional[str]]) -> None:
+    """Reset request ID context using token from set_request_id."""
+    _request_id_ctx_var.reset(token)
+
+
+def get_request_id() -> Optional[str]:
+    """Get current request ID from logging context."""
+    return _request_id_ctx_var.get()
 
 
 class JSONFormatter(logging.Formatter):
@@ -23,7 +42,7 @@ class JSONFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         """Format log record as JSON."""
         log_data: Dict[str, Any] = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": record.levelname,
             "service": self.service_name,
             "environment": self.environment,
@@ -76,21 +95,13 @@ class JSONFormatter(logging.Formatter):
 
 class RequestIdLogFilter(logging.Filter):
     """Add request ID from context to log records."""
-    
-    def __init__(self):
-        super().__init__()
-        self._request_id: Optional[str] = None
-    
+
     def filter(self, record: logging.LogRecord) -> bool:
         """Add request ID if available."""
-        # Will be set by middleware
+        request_id = get_request_id()
         if not hasattr(record, "request_id"):
-            record.request_id = self._request_id
+            record.request_id = request_id
         return True
-    
-    def set_request_id(self, request_id: str) -> None:
-        """Set the current request ID."""
-        self._request_id = request_id
 
 
 def setup_logging() -> None:

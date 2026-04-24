@@ -44,16 +44,16 @@ export function AddressesPage() {
   }
 
   return (
-    <section className="container mx-auto px-6 py-16 md:py-24">
+    <section className="container mx-auto px-4 sm:px-6 py-16 md:py-24">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-10 flex items-center justify-between">
+        <div className="mb-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <p className="text-small text-muted uppercase tracking-wide">Account</p>
-            <h1 className="font-headline text-4xl">Shipping Addresses</h1>
+            <h1 className="font-headline">Shipping Addresses</h1>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-foreground text-white rounded-[var(--radius-sm)] hover:bg-accent transition-colors"
+            className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-foreground text-white rounded-[var(--radius-sm)] hover:bg-accent transition-colors"
           >
             <Plus className="w-4 h-4" />
             Add Address
@@ -62,9 +62,9 @@ export function AddressesPage() {
 
         {showForm && (
           <div className="mb-8 rounded-[var(--radius-lg)] border border-border bg-white p-6">
-            <h2 className="text-xl font-medium mb-6">New Address</h2>
+            <h2 className="font-headline mb-6">New Address</h2>
             <form onSubmit={(e) => { e.preventDefault(); handleAddAddress(); }} className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Full Name</label>
                   <input
@@ -92,7 +92,7 @@ export function AddressesPage() {
                 />
               </div>
 
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">City</label>
                   <input
@@ -140,17 +140,17 @@ export function AddressesPage() {
                 </label>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-foreground text-white rounded-[var(--radius-sm)] hover:bg-accent transition-colors"
+                  className="w-full sm:w-auto px-6 py-2 bg-foreground text-white rounded-[var(--radius-sm)] hover:bg-accent transition-colors"
                 >
                   Save Address
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="px-6 py-2 border border-border rounded-[var(--radius-sm)] hover:border-accent transition-colors"
+                  className="w-full sm:w-auto px-6 py-2 border border-border rounded-[var(--radius-sm)] hover:border-accent transition-colors"
                 >
                   Cancel
                 </button>
@@ -175,11 +175,11 @@ export function AddressesPage() {
                 className="rounded-[var(--radius-lg)] border border-border bg-white p-6 relative"
               >
                 {address.is_default && (
-                  <span className="absolute top-4 right-4 text-xs bg-accent text-white px-3 py-1 rounded-full">
+                  <span className="absolute top-4 right-4 text-xs bg-accent text-white px-3 py-1 rounded-full max-w-[40%] text-center">
                     Default
                   </span>
                 )}
-                <div className="pr-24">
+                <div className="pr-0 sm:pr-24">
                   <h3 className="font-medium mb-2">{address.full_name}</h3>
                   <p className="text-muted text-sm leading-relaxed">
                     {address.street_address}<br />
@@ -188,7 +188,7 @@ export function AddressesPage() {
                     Phone: {address.phone}
                   </p>
                 </div>
-                <div className="flex gap-3 mt-4">
+                <div className="flex flex-wrap gap-3 mt-4">
                   <button className="flex items-center gap-2 text-sm text-accent hover:underline">
                     <Edit2 className="w-4 h-4" />
                     Edit

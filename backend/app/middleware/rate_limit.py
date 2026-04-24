@@ -5,7 +5,8 @@ Uses in-memory store for rate limiting (can be upgraded to Redis).
 
 from fastapi import Request, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
-from datetime import datetime, timedelta
+from starlette.responses import JSONResponse
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 import logging
 
@@ -30,7 +31,7 @@ class RateLimitStore:
         Returns:
             True if rate limited, False otherwise
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         cutoff = now - timedelta(seconds=window_seconds)
         
         # Remove old attempts outside the window
@@ -68,15 +69,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     
     # Rate limit configurations per endpoint
     RATE_LIMITS = {
-        "/auth/login": {
+        "/api/v1/auth/login": {
             "max_attempts": 5,
             "window_seconds": 15 * 60,  # 15 minutes
         },
-        "/auth/signup": {
+        "/api/v1/auth/signup": {
             "max_attempts": 3,
             "window_seconds": 60 * 60,  # 1 hour
         },
-        "/auth/verify-email": {
+        "/api/v1/auth/verify-email": {
             "max_attempts": 10,
             "window_seconds": 60 * 60,  # 1 hour
         },
@@ -104,14 +105,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Check rate limit
         if rate_limit_store.is_rate_limited(rate_limit_key, max_attempts, window_seconds):
             logger.warning(f"Rate limit exceeded for {path} from IP {client_ip}")
-            raise HTTPException(
+            return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=f"Too many attempts. Please try again later.",
+                content={"detail": "Too many attempts. Please try again later."},
                 headers={
                     "Retry-After": str(window_seconds),
                     "X-RateLimit-Limit": str(max_attempts),
                     "X-RateLimit-Remaining": "0",
-                }
+                },
             )
         
         # Proceed with request
@@ -121,7 +122,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         remaining = rate_limit_store.get_remaining(rate_limit_key, max_attempts)
         response.headers["X-RateLimit-Limit"] = str(max_attempts)
         response.headers["X-RateLimit-Remaining"] = str(remaining)
-        response.headers["X-RateLimit-Reset"] = str(int((datetime.utcnow() + timedelta(seconds=window_seconds)).timestamp()))
+        response.headers["X-RateLimit-Reset"] = str(int((datetime.now(timezone.utc) + timedelta(seconds=window_seconds)).timestamp()))
         
         return response
 

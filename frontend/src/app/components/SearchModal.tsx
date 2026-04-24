@@ -86,11 +86,11 @@ export function SearchModal({ isOpen, onClose, products }: SearchModalProps) {
             aria-modal="true"
             aria-labelledby="search-heading"
           >
-            <div className="min-h-screen bg-white px-6 py-12 md:py-24">
+            <div className="min-h-screen bg-white px-4 py-8 sm:px-6 md:py-24">
               <div className="container mx-auto max-w-4xl">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-12">
-                  <h2 id="search-heading" className="font-headline text-4xl md:text-5xl">
+                <div className="flex items-start justify-between gap-4 mb-8 md:mb-12">
+                  <h2 id="search-heading" className="font-headline">
                     Search
                   </h2>
                   <button
@@ -103,15 +103,15 @@ export function SearchModal({ isOpen, onClose, products }: SearchModalProps) {
                 </div>
 
                 {/* Search Input */}
-                <div className="relative mb-12">
-                  <SearchIcon className="absolute left-0 top-1/2 -translate-y-1/2 w-6 h-6 text-muted" />
+                <div className="relative mb-8 md:mb-12">
+                  <SearchIcon className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-6 sm:h-6 text-muted" />
                   <input
                     ref={inputRef}
                     type="search"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search for products..."
-                    className="w-full pl-10 pr-4 py-4 border-b-2 border-border focus:border-accent bg-transparent text-2xl placeholder:text-muted outline-none transition-colors"
+                    className="w-full pl-8 sm:pl-10 pr-4 py-3 sm:py-4 border-b-2 border-border focus:border-accent bg-transparent text-lg sm:text-2xl placeholder:text-muted outline-none transition-colors"
                     aria-label="Search products"
                     aria-describedby="search-results-status"
                   />
@@ -133,7 +133,7 @@ export function SearchModal({ isOpen, onClose, products }: SearchModalProps) {
                     <h3 className="text-nav text-muted mb-6">
                       {query ? 'Results' : 'Popular Products'}
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                       {results.map((product) => (
                         <a
                           key={product.id}
@@ -158,7 +158,7 @@ export function SearchModal({ isOpen, onClose, products }: SearchModalProps) {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-12">
+                  <div className="text-center py-12 px-4">
                     <p className="text-muted text-lg">No products found for "{query}"</p>
                   </div>
                 )}

@@ -12,8 +12,8 @@ export function AboutPage() {
           <div className="absolute inset-0 bg-black/40" />
         </div>
         <div className="relative z-10 text-center text-white px-6">
-          <h1 className="font-headline text-5xl md:text-6xl mb-6">Our Story</h1>
-          <p className="text-xl md:text-2xl max-w-3xl mx-auto">
+          <h1 className="font-headline mb-6">Our Story</h1>
+          <p className="text-lg md:text-xl max-w-3xl mx-auto">
             Crafting timeless pieces for the modern woman
           </p>
         </div>
@@ -23,7 +23,7 @@ export function AboutPage() {
       <section className="container mx-auto px-6 py-16 md:py-24">
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-small text-muted uppercase tracking-wide mb-4">Our Mission</p>
-          <h2 className="font-headline text-4xl mb-6">Quality Over Quantity</h2>
+          <h2 className="font-headline mb-6">Quality Over Quantity</h2>
           <p className="text-lg text-muted leading-relaxed mb-8">
             At Womanly, we believe in creating pieces that transcend seasonal trends. Each garment
             is carefully designed and ethically produced, ensuring that you invest in quality that
@@ -57,7 +57,7 @@ export function AboutPage() {
                   />
                 </svg>
               </div>
-              <h3 className="font-headline text-2xl mb-4">Sustainable</h3>
+                <h3 className="font-headline mb-4">Sustainable</h3>
               <p className="text-muted">
                 Ethically sourced materials and eco-friendly production processes that minimize our
                 environmental impact.
@@ -80,7 +80,7 @@ export function AboutPage() {
                   />
                 </svg>
               </div>
-              <h3 className="font-headline text-2xl mb-4">Quality First</h3>
+                <h3 className="font-headline mb-4">Quality First</h3>
               <p className="text-muted">
                 Every piece is crafted with meticulous attention to detail, ensuring durability and
                 timeless style.
@@ -103,7 +103,7 @@ export function AboutPage() {
                   />
                 </svg>
               </div>
-              <h3 className="font-headline text-2xl mb-4">Made with Care</h3>
+                <h3 className="font-headline mb-4">Made with Care</h3>
               <p className="text-muted">
                 Working with skilled artisans who are fairly compensated and work in safe,
                 dignified conditions.
@@ -118,7 +118,7 @@ export function AboutPage() {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
             <p className="text-small text-muted uppercase tracking-wide mb-4">Since 2020</p>
-            <h2 className="font-headline text-4xl mb-6">Our Journey</h2>
+            <h2 className="font-headline mb-6">Our Journey</h2>
             <p className="text-muted leading-relaxed mb-4">
               Womanly was born from a simple idea: that fashion should be both beautiful and
               responsible. Founded in 2020, we started as a small studio with a vision to create
@@ -147,7 +147,7 @@ export function AboutPage() {
       {/* CTA Section */}
       <section className="bg-foreground text-white py-16 md:py-24">
         <div className="container mx-auto px-6 text-center">
-          <h2 className="font-headline text-4xl mb-6">Join Our Community</h2>
+          <h2 className="font-headline mb-6">Join Our Community</h2>
           <p className="text-lg mb-8 max-w-2xl mx-auto opacity-90">
             Be the first to know about new collections, exclusive offers, and sustainable fashion
             tips.

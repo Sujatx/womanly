@@ -60,14 +60,14 @@ export function CartDrawer({ isOpen, onClose, items, onUpdateQuantity, onRemove 
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ duration: 0.35, ease: [0.2, 0.8, 0.2, 1] }}
-            className="fixed top-0 right-0 h-full w-full sm:w-[480px] bg-white z-[var(--z-modal)] shadow-2xl flex flex-col"
+            className="fixed top-0 right-0 h-full w-full sm:w-[480px] surface-panel z-[var(--z-modal)] flex flex-col"
             role="dialog"
             aria-modal="true"
             aria-labelledby="cart-title"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-border">
-              <h2 id="cart-title" className="text-2xl font-medium">
+            <div className="flex items-center justify-between p-6 border-b border-border/70">
+              <h2 id="cart-title" className="font-headline">
                 Shopping Cart ({items.length})
               </h2>
               <button
@@ -159,7 +159,7 @@ export function CartDrawer({ isOpen, onClose, items, onUpdateQuantity, onRemove 
 
             {/* Footer */}
             {items.length > 0 && (
-              <div className="border-t border-border p-6 space-y-4">
+              <div className="border-t border-border/70 p-6 space-y-4">
                 <div className="flex items-center justify-between text-lg">
                   <span>Subtotal</span>
                   <span className="font-medium" aria-live="polite">

@@ -76,47 +76,47 @@ export function CheckoutPage({ items }: CheckoutPageProps) {
         <h1 className="font-headline">Shipping & Payment Summary</h1>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 rounded-[var(--radius-lg)] border border-border bg-white p-6 space-y-5">
-          <h2 className="text-2xl font-headline">Shipping Details</h2>
-          <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="lg:col-span-2 rounded-[var(--radius-lg)] border border-border bg-white p-4 sm:p-6 space-y-5 overflow-hidden">
+          <h2 className="font-headline">Shipping Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <input
               value={country}
               onChange={(e) => setCountry(e.target.value.toUpperCase())}
-              className="px-4 py-3 border border-border rounded-[var(--radius-sm)] bg-background"
+              className="w-full min-w-0 px-4 py-3 border border-border rounded-[var(--radius-sm)] bg-background"
               placeholder="Country code (IN)"
             />
             <input
               value={state}
               onChange={(e) => setState(e.target.value)}
-              className="px-4 py-3 border border-border rounded-[var(--radius-sm)] bg-background"
+              className="w-full min-w-0 px-4 py-3 border border-border rounded-[var(--radius-sm)] bg-background"
               placeholder="State"
             />
             <input
               value={postalCode}
               onChange={(e) => setPostalCode(e.target.value)}
-              className="px-4 py-3 border border-border rounded-[var(--radius-sm)] bg-background"
+              className="w-full min-w-0 px-4 py-3 border border-border rounded-[var(--radius-sm)] bg-background"
               placeholder="Postal code"
             />
           </div>
 
-          <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex flex-col gap-3 md:flex-row">
             <button
               onClick={handleEstimateShippingAndTax}
-              className="px-6 py-3 rounded-[var(--radius-sm)] bg-foreground text-white hover:bg-accent transition-colors"
+              className="w-full md:w-auto px-6 py-3 rounded-[var(--radius-sm)] bg-foreground text-white hover:bg-accent transition-colors"
             >
               Estimate Shipping & Tax
             </button>
-            <div className="flex-1 flex gap-3">
+            <div className="flex flex-col sm:flex-row flex-1 gap-3 min-w-0">
               <input
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value)}
-                className="flex-1 px-4 py-3 border border-border rounded-[var(--radius-sm)] bg-background"
+                className="flex-1 min-w-0 px-4 py-3 border border-border rounded-[var(--radius-sm)] bg-background"
                 placeholder="Coupon code"
               />
               <button
                 onClick={handleApplyCoupon}
-                className="px-6 py-3 rounded-[var(--radius-sm)] border border-border hover:border-accent transition-colors"
+                className="w-full sm:w-auto px-6 py-3 rounded-[var(--radius-sm)] border border-border hover:border-accent transition-colors"
               >
                 Apply
               </button>
@@ -126,8 +126,8 @@ export function CheckoutPage({ items }: CheckoutPageProps) {
           {statusText ? <p className="text-small text-muted">{statusText}</p> : null}
         </div>
 
-        <aside className="rounded-[var(--radius-lg)] border border-border bg-white p-6 h-fit">
-          <h3 className="text-xl font-medium mb-4">Order Total</h3>
+        <aside className="rounded-[var(--radius-lg)] border border-border bg-white p-4 sm:p-6 h-fit">
+          <h3 className="font-medium mb-4">Order Total</h3>
           <div className="space-y-2 text-small">
             <p className="flex justify-between"><span className="text-muted">Subtotal</span><span>${subtotal.toFixed(2)}</span></p>
             <p className="flex justify-between"><span className="text-muted">Shipping</span><span>${(shippingCost || 0).toFixed(2)}</span></p>

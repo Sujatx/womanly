@@ -220,4 +220,24 @@
   .scroll-lock {
     overflow: hidden;
   }
+
+  .surface-panel {
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(17, 16, 20, 0.08);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(14px);
+  }
+
+  .surface-panel-dark {
+    background: rgba(17, 16, 20, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(14px);
+  }
+
+  .surface-chip {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(17, 16, 20, 0.08);
+    box-shadow: 0 2px 6px rgba(16, 16, 16, 0.04);
+  }
 }

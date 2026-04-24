@@ -5,6 +5,12 @@ on:
     branches: [main]
   push:
     branches: [main]
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   backend-checks:
@@ -69,19 +75,74 @@ jobs:
   build-images:
     runs-on: ubuntu-latest
     needs: [backend-checks, frontend-checks]
+    outputs:
+      image_tag: ${{ steps.vars.outputs.IMAGE_TAG }}
+      image_registry: ${{ steps.vars.outputs.IMAGE_REGISTRY }}
+      backend_image: ${{ steps.vars.outputs.BACKEND_IMAGE }}
+      frontend_image: ${{ steps.vars.outputs.FRONTEND_IMAGE }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate release tag format
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+            if [[ ! "${TAG_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Invalid release tag format: ${TAG_NAME}"
+              echo "Expected format: vMAJOR.MINOR.PATCH (for example v1.2.3)"
+              exit 1
+            fi
+          fi
+
       - name: Set image tag
         id: vars
-        run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION="0.0.0-ci.${GITHUB_RUN_NUMBER}"
+          fi
+
+          OWNER_LOWER=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_REGISTRY="ghcr.io/${OWNER_LOWER}"
+          BACKEND_IMAGE="${IMAGE_REGISTRY}/womanly-backend"
+          FRONTEND_IMAGE="${IMAGE_REGISTRY}/womanly-frontend"
+
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "IMAGE_VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "IMAGE_SHA=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "IMAGE_TAG=${VERSION}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "IMAGE_REGISTRY=${IMAGE_REGISTRY}" >> $GITHUB_OUTPUT
+          echo "BACKEND_IMAGE=${BACKEND_IMAGE}" >> $GITHUB_OUTPUT
+          echo "FRONTEND_IMAGE=${FRONTEND_IMAGE}" >> $GITHUB_OUTPUT
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build backend image
-        run: docker build -f backend/Dockerfile.prod -t womanly-backend:${{ steps.vars.outputs.IMAGE_TAG }} backend
+        run: |
+          docker build \
+            -f backend/Dockerfile.prod \
+            -t ${{ steps.vars.outputs.BACKEND_IMAGE }}:${{ steps.vars.outputs.IMAGE_TAG }} \
+            -t ${{ steps.vars.outputs.BACKEND_IMAGE }}:${{ steps.vars.outputs.IMAGE_SHA }} \
+            backend
+          docker push ${{ steps.vars.outputs.BACKEND_IMAGE }}:${{ steps.vars.outputs.IMAGE_TAG }}
+          docker push ${{ steps.vars.outputs.BACKEND_IMAGE }}:${{ steps.vars.outputs.IMAGE_SHA }}
 
       - name: Build frontend image
-        run: docker build -f frontend/Dockerfile.prod -t womanly-frontend:${{ steps.vars.outputs.IMAGE_TAG }} frontend
+        run: |
+          docker build \
+            -f frontend/Dockerfile.prod \
+            -t ${{ steps.vars.outputs.FRONTEND_IMAGE }}:${{ steps.vars.outputs.IMAGE_TAG }} \
+            -t ${{ steps.vars.outputs.FRONTEND_IMAGE }}:${{ steps.vars.outputs.IMAGE_SHA }} \
+            frontend
+          docker push ${{ steps.vars.outputs.FRONTEND_IMAGE }}:${{ steps.vars.outputs.IMAGE_TAG }}
+          docker push ${{ steps.vars.outputs.FRONTEND_IMAGE }}:${{ steps.vars.outputs.IMAGE_SHA }}
 
   deploy-staging:
     if: github.ref == 'refs/heads/main'
@@ -90,10 +151,56 @@ jobs:
     environment:
       name: staging
     steps:
-      - name: Placeholder deploy step
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to staging over SSH (compose)
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          IMAGE_TAG: ${{ needs.build-images.outputs.image_tag }}
+          IMAGE_REGISTRY: ${{ needs.build-images.outputs.image_registry }}
+          STAGING_APP_DIR: ${{ secrets.STAGING_APP_DIR }}
+        with:
+          host: ${{ secrets.STAGING_SSH_HOST }}
+          username: ${{ secrets.STAGING_SSH_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          port: ${{ secrets.STAGING_SSH_PORT || '22' }}
+          envs: IMAGE_TAG,IMAGE_REGISTRY,STAGING_APP_DIR
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd "${STAGING_APP_DIR}"
+            export APP_VERSION="${IMAGE_TAG}"
+            export IMAGE_REGISTRY="${IMAGE_REGISTRY}"
+
+            docker compose -f docker-compose.prod.yml --env-file .env.staging pull backend frontend
+            docker compose -f docker-compose.prod.yml --env-file .env.staging up -d backend frontend
+            docker compose -f docker-compose.prod.yml --env-file .env.staging exec -T backend alembic upgrade head
+
+      - name: Verify TLS + security headers
         run: |
-          echo "Add staging deployment command (SSH, ECS, or Kubernetes)"
-          echo "This workflow already gates deployment on successful checks and image builds."
+          chmod +x scripts/verify_security_headers.sh
+          ./scripts/verify_security_headers.sh "${{ secrets.STAGING_PUBLIC_BASE_URL }}" "/health"
+
+      - name: Staging smoke test
+        run: |
+          curl -fsS "${{ secrets.STAGING_PUBLIC_BASE_URL }}/health"
+
+      - name: Capture staging header evidence
+        run: |
+          curl -fsS -I "${{ secrets.STAGING_PUBLIC_BASE_URL }}/health" > staging-security-headers.txt
+
+      - name: Upload staging header evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-security-headers
+          path: staging-security-headers.txt
+
+      - name: Deployment summary
+        run: |
+          echo "Staging deployment completed"
+          echo "IMAGE_TAG=${{ needs.build-images.outputs.image_tag }}"
+          echo "IMAGE_REGISTRY=${{ needs.build-images.outputs.image_registry }}"
 
   deploy-production:
     if: github.ref == 'refs/heads/main'

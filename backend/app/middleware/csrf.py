@@ -4,7 +4,7 @@ CSRF (Cross-Site Request Forgery) protection middleware for FastAPI.
 
 from fastapi import Request, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 from sqlmodel import Session, select
 from datetime import datetime, timedelta
 import uuid
@@ -26,9 +26,6 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
         "/api/v1/auth/signup",
         "/api/v1/auth/login",
         "/api/v1/auth/verify-email",
-        "/auth/signup",
-        "/auth/login",
-        "/auth/verify-email",
         "/docs",
         "/openapi.json"
     }  # Paths that don't need CSRF protection
@@ -50,9 +47,11 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
         csrf_token = request.headers.get("X-CSRF-Token")
         
         if not csrf_token:
-            raise HTTPException(
+            return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="CSRF token missing. Include X-CSRF-Token header for state-changing requests."
+                content={
+                    "detail": "CSRF token missing. Include X-CSRF-Token header for state-changing requests."
+                },
             )
         
         # Note: Actual token validation happens in a dependency

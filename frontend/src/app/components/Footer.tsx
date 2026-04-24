@@ -4,10 +4,10 @@ export function Footer() {
   return (
     <footer className="bg-foreground text-white py-16 md:py-24">
       <div className="container mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+        <div className="surface-panel-dark rounded-[var(--radius-lg)] p-8 md:p-10 lg:p-12 grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           {/* Newsletter */}
           <div className="md:col-span-2">
-            <h3 className="font-headline text-2xl mb-4">Join Our Newsletter</h3>
+            <h3 className="font-headline mb-4">Join Our Newsletter</h3>
             <p className="text-white/70 mb-4">
               Subscribe to receive updates, access to exclusive deals, and more.
             </p>
@@ -64,19 +64,15 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#/wishlist" className="text-white/70 hover:text-white transition-colors">
+                <a href="#/about" className="text-white/70 hover:text-white transition-colors">
                   Sustainability
                 </a>
               </li>
               <li>
-                <a href="#careers" className="text-white/70 hover:text-white transition-colors">
-                  Careers
-                </a>
+                <span className="text-white/40">Careers</span>
               </li>
               <li>
-                <a href="#contact" className="text-white/70 hover:text-white transition-colors">
-                  Contact
-                </a>
+                <span className="text-white/40">Contact</span>
               </li>
             </ul>
           </div>
@@ -85,12 +81,8 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-white/20 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-6">
-            <a href="#privacy" className="text-small text-white/70 hover:text-white transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#terms" className="text-small text-white/70 hover:text-white transition-colors">
-              Terms of Service
-            </a>
+            <span className="text-small text-white/40">Privacy Policy</span>
+            <span className="text-small text-white/40">Terms of Service</span>
             <a href="#/checkout" className="text-small text-white/70 hover:text-white transition-colors">
               Shipping & Returns
             </a>

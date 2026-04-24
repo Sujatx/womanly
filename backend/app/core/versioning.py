@@ -1,23 +1,24 @@
 """
 API Versioning Module
 
-This module provides utilities for API versioning and helps manage
-the transition from unversioned to versioned APIs.
+This module provides metadata and utilities for API versioning in a
+v1-only runtime.
 
 VERSIONING STRATEGY:
 ====================
 
-Current State:
-- Legacy unversioned routes (/, /products, /auth, etc.)
+Runtime State:
+- v1 is the supported public contract (/api/v1/products, /api/v1/auth, etc.)
+- Legacy unversioned routes are removed from the application router
 
-Target State:
-- Versioned routes (/api/v1/products, /api/v1/auth, etc.)
-- Support for multiple API versions simultaneously
+Forward State:
+- Versioned routes only
+- Support for future API versions through explicit versioned routers
 
 Migration Path:
-1. Phase 1: Add v1 routes alongside legacy routes (both work)
-2. Phase 2: Add deprecation warnings to legacy routes
-3. Phase 3: Remove legacy routes (after 6-12 months)
+1. Phase 1: Add v1 routes alongside legacy routes (completed)
+2. Phase 2: Add deprecation warnings to legacy routes (completed)
+3. Phase 3: Remove legacy routes (completed)
 
 Version Support Policy:
 - Each major version supported for minimum 12 months
@@ -28,7 +29,6 @@ Version Support Policy:
 
 from fastapi import APIRouter, Request, Response
 from typing import Callable
-import warnings
 from datetime import datetime
 from app.core.logging import get_structured_logger
 
@@ -37,11 +37,11 @@ logger = get_structured_logger(__name__)
 # API version configuration
 CURRENT_VERSION = "v1"
 SUPPORTED_VERSIONS = ["v1"]
-DEPRECATED_VERSIONS = []  # Will include v0 (unversioned) in future
+DEPRECATED_VERSIONS = []
 
-# Deprecation dates
-LEGACY_API_DEPRECATION_DATE = datetime(2026, 9, 1)  # 6 months from now
-LEGACY_API_SUNSET_DATE = datetime(2027, 3, 1)  # 12 months from now
+# Deprecation dates retained for historical metadata and any future legacy handling
+LEGACY_API_DEPRECATION_DATE = datetime(2026, 9, 1)
+LEGACY_API_SUNSET_DATE = datetime(2027, 3, 1)
 
 
 def create_versioned_router(prefix: str, version: str = "v1") -> APIRouter:
@@ -73,9 +73,9 @@ def add_deprecation_warning(response: Response, sunset_date: datetime) -> None:
 
 async def deprecation_middleware(request: Request, call_next: Callable):
     """
-    Middleware to add deprecation warnings to legacy (unversioned) routes.
-    
-    Logs deprecation usage and adds headers to inform clients.
+    Add deprecation headers when unexpected non-versioned API requests are received.
+
+    This middleware is observability-only and does not provide legacy route support.
     """
     path = request.url.path
     

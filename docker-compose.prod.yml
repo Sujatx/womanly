@@ -3,7 +3,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.prod
-    image: womanly-backend:${APP_VERSION:-v1.0.0}
+    image: ${IMAGE_REGISTRY:-ghcr.io/example}/womanly-backend:${APP_VERSION:-v1.0.0}
     restart: unless-stopped
     env_file:
       - ./.env.prod
@@ -53,7 +53,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
-    image: womanly-frontend:${APP_VERSION:-v1.0.0}
+    image: ${IMAGE_REGISTRY:-ghcr.io/example}/womanly-frontend:${APP_VERSION:-v1.0.0}
     restart: unless-stopped
     depends_on:
       backend:

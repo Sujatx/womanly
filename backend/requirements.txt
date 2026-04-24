@@ -14,3 +14,4 @@ aiosmtplib
 bleach
 redis
 sentry-sdk[fastapi]
+prometheus-client

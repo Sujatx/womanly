@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from app.core.exceptions import AppException, InternalServerException
-from app.core.logging import get_structured_logger
+from app.core.logging import get_structured_logger, reset_request_id, set_request_id
 
 logger = get_structured_logger(__name__)
 
@@ -53,9 +53,16 @@ def add_error_handlers(app: FastAPI) -> None:
     @app.middleware("http")
     async def add_request_id_middleware(request: Request, call_next):
         """Add request ID to request state for use in error handlers."""
-        request.state.request_id = str(uuid.uuid4())
+        incoming_request_id = request.headers.get("X-Request-ID", "").strip()
+        request_id = incoming_request_id if incoming_request_id else str(uuid.uuid4())
+
+        request.state.request_id = request_id
+        token = set_request_id(request_id)
+
         response = await call_next(request)
-        response.headers["X-Request-ID"] = request.state.request_id
+        response.headers["X-Request-ID"] = request_id
+
+        reset_request_id(token)
         return response
     
     @app.exception_handler(AppException)

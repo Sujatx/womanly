@@ -40,7 +40,7 @@ export function ProductDetailPage({ productId, onAddToCart }: ProductDetailPageP
 
   if (loading) {
     return (
-      <section className="container mx-auto px-6 py-16 md:py-24">
+      <section className="container mx-auto px-4 sm:px-6 py-16 md:py-24">
         <div className="animate-pulse space-y-8">
           <div className="aspect-square bg-secondary/50 rounded-[var(--radius-lg)]" />
           <div className="space-y-4">
@@ -54,8 +54,8 @@ export function ProductDetailPage({ productId, onAddToCart }: ProductDetailPageP
 
   if (!product) {
     return (
-      <section className="container mx-auto px-6 py-16 md:py-24 text-center">
-        <h1 className="font-headline text-2xl mb-4">Product Not Found</h1>
+      <section className="container mx-auto px-4 sm:px-6 py-16 md:py-24 text-center">
+        <h1 className="font-headline mb-4">Product Not Found</h1>
         <a href="#/shop" className="text-accent hover:underline">
           Continue Shopping
         </a>
@@ -114,8 +114,8 @@ export function ProductDetailPage({ productId, onAddToCart }: ProductDetailPageP
   };
 
   return (
-    <section className="container mx-auto px-6 py-16 md:py-24">
-      <div className="grid lg:grid-cols-2 gap-12">
+    <section className="container mx-auto px-4 sm:px-6 py-16 md:py-24">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
         {/* Image Gallery */}
         <div>
           <div className="relative aspect-[4/5] bg-secondary rounded-[var(--radius-lg)] overflow-hidden mb-4">
@@ -156,7 +156,7 @@ export function ProductDetailPage({ productId, onAddToCart }: ProductDetailPageP
 
           {/* Thumbnails */}
           {images.length > 1 && (
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               {images.slice(0, 4).map((img, idx) => (
                 <button
                   key={img.id}
@@ -183,7 +183,7 @@ export function ProductDetailPage({ productId, onAddToCart }: ProductDetailPageP
             <p className="text-small text-muted uppercase tracking-wide mb-2">
               {product.brand || product.category_slug.replace(/-/g, ' ')}
             </p>
-            <h1 className="font-headline text-4xl mb-4">{product.title}</h1>
+            <h1 className="font-headline mb-4">{product.title}</h1>
             <p className="text-2xl font-medium">${displayPrice.toFixed(2)}</p>
           </div>
 
@@ -195,7 +195,7 @@ export function ProductDetailPage({ productId, onAddToCart }: ProductDetailPageP
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-3">Select Variant</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {product.variants.map((variant) => (
                   <button
                     key={variant.id}
@@ -237,7 +237,7 @@ export function ProductDetailPage({ productId, onAddToCart }: ProductDetailPageP
             {/* Quantity */}
             <div>
               <label className="block text-sm font-medium mb-3">Quantity</label>
-              <div className="flex items-center gap-3 w-fit">
+              <div className="flex items-center gap-3 w-fit max-w-full flex-wrap">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   className="px-4 py-2 border border-border rounded-[var(--radius-sm)] hover:border-accent transition-colors"
@@ -258,7 +258,7 @@ export function ProductDetailPage({ productId, onAddToCart }: ProductDetailPageP
           </div>
 
           {/* Actions */}
-          <div className="flex gap-4 pt-6">
+          <div className="flex flex-col sm:flex-row gap-4 pt-6">
             <button
               onClick={handleAddToCart}
               disabled={!isInStock}

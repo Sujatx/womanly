@@ -60,7 +60,7 @@ async def create_order(
         )
     
     # Check if we've already processed this request
-    cached = await get_cached_response(session, idempotency_key, "/payments/create-order", current_user.id)
+    cached = await get_cached_response(session, idempotency_key, "/api/v1/payments/create-order", current_user.id)
     if cached:
         return JSONResponse(
             status_code=cached.response_status_code,
@@ -223,7 +223,7 @@ async def create_order(
             session,
             idempotency_key,
             current_user.id,
-            "/payments/create-order",
+            "/api/v1/payments/create-order",
             await request.body(),
             json.dumps(response_data),
             200

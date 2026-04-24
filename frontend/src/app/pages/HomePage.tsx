@@ -50,7 +50,7 @@ export function HomePage({ products, loading, onQuickView }: HomePageProps) {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
               <div className="absolute bottom-8 left-8 right-8 text-white">
-                <h3 className="font-headline text-3xl mb-2">{collection}</h3>
+                <h3 className="font-headline mb-2">{collection}</h3>
                 <p className="text-small opacity-90">
                   {collection === 'Evening' && 'Elegant pieces for special occasions'}
                   {collection === 'Essentials' && 'Timeless wardrobe foundations'}
@@ -95,7 +95,7 @@ export function HomePage({ products, loading, onQuickView }: HomePageProps) {
         heading="Crafted for the Modern Woman"
         subheading="Every piece in our collection is thoughtfully designed and ethically produced. We believe in quality over quantity, creating garments that last beyond seasons."
         ctaText="Our Story"
-        ctaHref="#about"
+        ctaHref="#/about"
       />
 
       <section id="about" className="container mx-auto px-6 py-16 md:py-24">
@@ -106,7 +106,7 @@ export function HomePage({ products, loading, onQuickView }: HomePageProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="text-xl font-medium mb-2">Quality Craftsmanship</h3>
+            <h3 className="font-medium mb-2">Quality Craftsmanship</h3>
             <p className="text-muted">Each garment is meticulously crafted using the finest materials.</p>
           </div>
 
@@ -116,7 +116,7 @@ export function HomePage({ products, loading, onQuickView }: HomePageProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="text-xl font-medium mb-2">Sustainable Practices</h3>
+            <h3 className="font-medium mb-2">Sustainable Practices</h3>
             <p className="text-muted">We are committed to ethical production and environmental responsibility.</p>
           </div>
 
@@ -126,7 +126,7 @@ export function HomePage({ products, loading, onQuickView }: HomePageProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </div>
-            <h3 className="text-xl font-medium mb-2">Thoughtful Design</h3>
+            <h3 className="font-medium mb-2">Thoughtful Design</h3>
             <p className="text-muted">Timeless pieces designed to transcend trends.</p>
           </div>
         </div>

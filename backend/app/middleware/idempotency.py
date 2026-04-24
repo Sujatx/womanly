@@ -7,7 +7,7 @@ from fastapi import Request, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from sqlmodel import Session, select
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import logging
@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 # Endpoints that require idempotency
 IDEMPOTENT_ENDPOINTS = {
-    "/payments/create-order",
-    "/payments/verify"
+    "/api/v1/payments/create-order",
+    "/api/v1/payments/verify"
 }
 
 # TTL for idempotency keys (1 hour)
@@ -45,7 +45,7 @@ async def store_idempotency_key(
         request_hash=request_hash,
         response_json=response_json,
         response_status_code=response_status,
-        expires_at=datetime.utcnow() + IDEMPOTENCY_KEY_TTL
+        expires_at=datetime.now(timezone.utc) + IDEMPOTENCY_KEY_TTL
     )
     
     session.add(key)
@@ -100,16 +100,16 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
         idempotency_key = request.headers.get("Idempotency-Key")
         
         if not idempotency_key:
-            raise HTTPException(
+            return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Idempotency-Key header is required for payment endpoints"
+                content={"detail": "Idempotency-Key header is required for payment endpoints"},
             )
         
         # Validate key format (should be a UUID or similar)
         if len(idempotency_key) < 8 or len(idempotency_key) > 255:
-            raise HTTPException(
+            return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid Idempotency-Key format"
+                content={"detail": "Invalid Idempotency-Key format"},
             )
         
         # Note: Actual idempotency checking happens in payment endpoints

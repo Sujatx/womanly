@@ -94,10 +94,10 @@ export function ProductDetailModal({ product, onClose, onAddToCart }: ProductDet
             aria-modal="true"
             aria-labelledby="product-title"
           >
-            <div className="h-full bg-white rounded-[var(--radius-lg)] shadow-2xl overflow-hidden flex flex-col">
+            <div className="h-full surface-panel rounded-[var(--radius-lg)] overflow-hidden flex flex-col">
               {/* Header */}
-              <div className="flex items-center justify-between p-4 md:p-6 border-b border-border">
-                <h2 id="product-title" className="text-xl md:text-2xl font-medium">
+              <div className="flex items-center justify-between p-4 md:p-6 border-b border-border/70">
+                <h2 id="product-title" className="font-headline">
                   {product.name}
                 </h2>
                 <button
@@ -129,14 +129,14 @@ export function ProductDetailModal({ product, onClose, onAddToCart }: ProductDet
                         <>
                           <button
                             onClick={prevImage}
-                            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full hover:bg-white transition-colors"
+                            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 surface-chip rounded-full hover:bg-white transition-colors"
                             aria-label="Previous image"
                           >
                             <ChevronLeft className="w-5 h-5" />
                           </button>
                           <button
                             onClick={nextImage}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full hover:bg-white transition-colors"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 surface-chip rounded-full hover:bg-white transition-colors"
                             aria-label="Next image"
                           >
                             <ChevronRight className="w-5 h-5" />
@@ -175,7 +175,7 @@ export function ProductDetailModal({ product, onClose, onAddToCart }: ProductDet
                     <p className="text-small text-muted uppercase tracking-wide mb-2">
                       {product.collection}
                     </p>
-                    <h3 className="text-3xl md:text-4xl font-headline mb-4">
+                    <h3 className="font-headline mb-4">
                       {product.name}
                     </h3>
                     
@@ -287,7 +287,7 @@ export function ProductDetailModal({ product, onClose, onAddToCart }: ProductDet
                     </div>
 
                     {/* Additional Info */}
-                    <div className="mt-8 pt-8 border-t border-border space-y-4 text-small">
+                    <div className="mt-8 pt-8 border-t border-border/70 space-y-4 text-small">
                       <p className="flex justify-between">
                         <span className="text-muted">SKU</span>
                         <span>{product.id.toUpperCase()}</span>

@@ -13,7 +13,7 @@ export function Navbar({ onSearchOpen, onCartOpen, cartItemCount }: NavbarProps)
   const { isAuthenticated } = useAuth();
 
   return (
-    <header className="sticky top-0 bg-white border-b border-border z-[var(--z-header)]">
+    <header className="sticky top-0 surface-panel border-b border-border z-[var(--z-header)]">
       <nav className="container mx-auto px-6" aria-label="Main navigation">
         {/* Desktop & Tablet */}
         <div className="hidden md:flex items-center justify-between h-20">
@@ -43,7 +43,7 @@ export function Navbar({ onSearchOpen, onCartOpen, cartItemCount }: NavbarProps)
           <div className="absolute left-1/2 -translate-x-1/2">
             <a 
               href="#/" 
-              className="h-80 w-60 flex items-center justify-center"
+              className="flex h-12 w-32 items-center justify-center md:h-16 md:w-40"
               aria-label="Womanly Home"
             >
               <img src="/LOGO.png" alt="Womanly" className="max-h-full max-w-full object-contain" />
@@ -101,7 +101,7 @@ export function Navbar({ onSearchOpen, onCartOpen, cartItemCount }: NavbarProps)
 
           <a 
             href="#/" 
-            className="h-40 w-80 flex items-center justify-center"
+            className="flex h-10 w-24 items-center justify-center sm:h-12 sm:w-28"
             aria-label="Womanly Home"
           >
             <img src="/favicon.png" alt="Womanly" className="max-h-full max-w-full object-contain" />

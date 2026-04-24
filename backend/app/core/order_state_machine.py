@@ -26,7 +26,7 @@ INVALID TRANSITIONS:
 
 from enum import Enum
 from typing import Set, Dict, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from app.core.exceptions import InvalidOrderTransitionException
 from app.core.logging import get_structured_logger
 
@@ -172,7 +172,7 @@ class OrderTransition:
         self.order_id = order_id
         self.from_status = from_status
         self.to_status = to_status
-        self.timestamp = datetime.utcnow()
+        self.timestamp = datetime.now(timezone.utc)
         self.updated_by = updated_by  # User ID who made the change
         self.notes = notes
     
