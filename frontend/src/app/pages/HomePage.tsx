@@ -20,10 +20,10 @@ export function HomePage({ products, loading, onQuickView }: HomePageProps) {
         ctaHref="#/shop"
       />
 
-      <section id="collections" className="container mx-auto px-6 py-16 md:py-24">
-        <div className="text-center mb-12">
-          <h2 className="font-headline mb-4">Featured Collections</h2>
-          <p className="text-lg text-muted max-w-2xl mx-auto">
+      <section id="collections" className="container mx-auto px-4 sm:px-6 py-12 md:py-16 lg:py-24">
+        <div className="text-center mb-8 md:mb-12">
+          <h2 className="font-headline text-2xl sm:text-3xl md:text-4xl mb-3 md:mb-4">Featured Collections</h2>
+          <p className="text-base sm:text-lg text-muted max-w-2xl mx-auto">
             Curated pieces that embody quiet luxury and effortless sophistication
           </p>
         </div>

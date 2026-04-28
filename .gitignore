@@ -142,9 +142,12 @@ END_TO_END_BUILD_PLAN.md
 IMAGE_TAGGING_POLICY.md
 PRD_IMPLEMENTATION_CHECKLIST.md
 Skills/
-docs/ops/alerts/
-docs/ops/metrics-dashboard-queries.md
-docs/ops/release-evidence-template.md
+docs/
+lighthousereport.html
+MOBILE_OPTIMIZATION.md
+PERFORMANCE_GUIDE.md
+SECURITY_HEADERS.md
+
 
 # Security & Secrets
 *.pem

@@ -27,23 +27,23 @@ export function ShopPage({ products, loading, onQuickView }: ShopPageProps) {
     : products.filter(p => p.collection === selectedCategory);
 
   return (
-    <section className="container mx-auto px-6 py-16 md:py-24">
-      <div className="mb-10">
-        <div className="flex items-end justify-between gap-6 mb-6">
+    <section className="container mx-auto px-4 sm:px-6 py-12 md:py-16 lg:py-24">
+      <div className="mb-8 md:mb-10">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between md:gap-6 mb-6">
           <div>
             <p className="text-small text-muted uppercase tracking-wide">Shop</p>
-            <h1 className="font-headline">All Products</h1>
+            <h1 className="font-headline text-2xl sm:text-3xl md:text-4xl">All Products</h1>
           </div>
           <p className="text-small text-muted">{filteredProducts.length} products</p>
         </div>
 
-        {/* Category Filter */}
-        <div className="flex flex-wrap gap-3">
+        {/* Category Filter - Mobile optimized */}
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           {categories.map((category) => (
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-4 py-2 rounded-[var(--radius-sm)] text-sm transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-[var(--radius-sm)] text-xs sm:text-sm transition-colors touch-activation ${
                 selectedCategory === category
                   ? 'bg-foreground text-white'
                   : 'bg-secondary text-foreground hover:bg-accent/10'
@@ -55,12 +55,12 @@ export function ShopPage({ products, loading, onQuickView }: ShopPageProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
         {loading
           ? Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="space-y-4 animate-pulse">
                 <div className="aspect-[3/4] bg-secondary/50 rounded-[var(--radius-lg)]" />
-                <div className="space-y-2">
+                <div className="space-y-2 px-1">
                   <div className="h-4 bg-secondary/50 rounded w-3/4" />
                   <div className="h-4 bg-secondary/50 rounded w-1/4" />
                 </div>

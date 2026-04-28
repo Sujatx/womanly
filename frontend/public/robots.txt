@@ -1,0 +1,32 @@
+# Womanly E-Commerce Robot Rules
+# Allow search engines to crawl public content
+
+User-agent: *
+Allow: /
+Allow: /#/shop
+Allow: /#/product/
+Allow: /#/cart
+Allow: /#/checkout
+Disallow: /#/admin
+Disallow: /#/user/
+Disallow: /*.json
+Disallow: /*.jsx
+Disallow: /*.tsx
+
+# Specific bots
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Bad bots
+User-agent: AhrefsBot
+User-agent: SemrushBot
+User-agent: DotBot
+Disallow: /
+
+# Sitemap
+Sitemap: https://womanly.example.com/sitemap.xml

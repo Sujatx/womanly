@@ -2,11 +2,95 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes, maximum-scale=5" />
     <meta name="theme-color" content="#0f172a" />
-    <title>Womanly — High-End Editorial Fashion</title>
+    
+    <!-- iOS Specific -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Womanly" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    
+    <!-- Safe Area Styles for Notched Phones -->
+    <style>
+      :root {
+        --safe-area-inset-top: env(safe-area-inset-top, 0);
+        --safe-area-inset-right: env(safe-area-inset-right, 0);
+        --safe-area-inset-bottom: env(safe-area-inset-bottom, 0);
+        --safe-area-inset-left: env(safe-area-inset-left, 0);
+      }
+    </style>
+    
+    <!-- SEO & Meta Tags -->
+    <title>Womanly — High-End Editorial Fashion | Premium E-Commerce</title>
+    <meta name="description" content="Discover curated premium fashion and editorial pieces. Shop luxury collections with secure checkout and fast delivery." />
+    <meta name="keywords" content="fashion, premium, editorial, clothing, luxury, e-commerce" />
+    <meta name="author" content="Womanly" />
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="English" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://womanly.example.com/" />
+    
+    <!-- Open Graph / Social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://womanly.example.com/" />
+    <meta property="og:title" content="Womanly — High-End Editorial Fashion" />
+    <meta property="og:description" content="Discover curated premium fashion and editorial pieces with secure checkout." />
+    <meta property="og:image" content="https://womanly.example.com/og-image.png" />
+    <meta property="og:site_name" content="Womanly" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://womanly.example.com/" />
+    <meta name="twitter:title" content="Womanly — High-End Editorial Fashion" />
+    <meta name="twitter:description" content="Discover curated premium fashion and editorial pieces." />
+    <meta name="twitter:image" content="https://womanly.example.com/og-image.png" />
+    
+    <!-- Preconnect to critical domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://api.womanly.example.com" crossorigin />
+    <link rel="dns-prefetch" href="https://cdn.example.com" />
+    
+    <!-- Favicon & PWA -->
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Womanly",
+      "url": "https://womanly.example.com",
+      "logo": "https://womanly.example.com/favicon.png",
+      "description": "High-end editorial fashion e-commerce platform",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "Customer Support",
+        "url": "https://womanly.example.com/contact"
+      }
+    }
+    </script>
+    
+    <!-- Structured Data for E-Commerce -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "url": "https://womanly.example.com",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://womanly.example.com/#/shop?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

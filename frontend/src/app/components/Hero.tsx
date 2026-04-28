@@ -19,7 +19,7 @@ export function Hero({
 }: HeroProps) {
   if (variant === 'full-bleed') {
     return (
-      <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[50vh] md:min-h-[80vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
           <img
             src={image}
@@ -31,12 +31,12 @@ export function Hero({
           />
           <div className="absolute inset-0 bg-black/30" />
         </div>
-        <div className="relative z-10 surface-panel-dark rounded-[var(--radius-lg)] text-center text-white px-6 py-10 md:px-12 md:py-14 max-w-3xl mx-6">
+        <div className="relative z-10 surface-panel-dark rounded-[var(--radius-lg)] text-center text-white px-4 py-8 sm:px-6 sm:py-10 md:px-12 md:py-14 max-w-3xl mx-4 sm:mx-6">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.2, 0.8, 0.2, 1] }}
-            className="font-headline mb-6"
+            className="font-headline text-2xl sm:text-3xl md:text-4xl mb-4 sm:mb-6"
           >
             {heading}
           </motion.h1>
@@ -45,7 +45,7 @@ export function Hero({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1, ease: [0.2, 0.8, 0.2, 1] }}
-              className="text-xl mb-8 max-w-2xl mx-auto"
+              className="text-base sm:text-lg md:text-xl mb-6 md:mb-8 max-w-2xl mx-auto"
             >
               {subheading}
             </motion.p>
@@ -55,7 +55,7 @@ export function Hero({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
             href={ctaHref}
-            className="inline-block surface-chip text-foreground px-8 py-4 rounded-[var(--radius-sm)] hover:bg-accent hover:text-white transition-colors duration-[var(--motion-micro)]"
+            className="inline-block surface-chip text-foreground px-6 sm:px-8 py-3 sm:py-4 rounded-[var(--radius-sm)] hover:bg-accent hover:text-white transition-colors duration-[var(--motion-micro)] text-sm sm:text-base touch-activation"
           >
             {ctaText}
           </motion.a>
@@ -67,8 +67,8 @@ export function Hero({
   const isImageLeft = variant === 'image-left';
 
   return (
-    <section className="container mx-auto px-6 py-16 md:py-24">
-      <div className={`grid md:grid-cols-2 gap-12 items-center ${isImageLeft ? '' : 'md:grid-flow-dense'}`}>
+    <section className="container mx-auto px-4 sm:px-6 py-12 md:py-16 lg:py-24">
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center ${isImageLeft ? '' : 'md:grid-flow-dense'}`}>
         {/* Image */}
         <motion.div
           initial={{ opacity: 0, x: isImageLeft ? -20 : 20 }}
@@ -93,19 +93,19 @@ export function Hero({
           initial={{ opacity: 0, x: isImageLeft ? 20 : -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.1, ease: [0.2, 0.8, 0.2, 1] }}
-          className={`${isImageLeft ? '' : 'md:col-start-1'} surface-panel rounded-[var(--radius-lg)] p-8 md:p-10`}
+          className={`${isImageLeft ? '' : 'md:col-start-1'} surface-panel rounded-[var(--radius-lg)] p-6 sm:p-8 md:p-10`}
         >
-          <h1 className="font-headline mb-6">
+          <h1 className="font-headline text-2xl sm:text-3xl md:text-4xl mb-4 sm:mb-6">
             {heading}
           </h1>
           {subheading && (
-            <p className="text-lg text-muted mb-8 leading-relaxed">
+            <p className="text-base sm:text-lg md:text-lg text-muted mb-6 md:mb-8 leading-relaxed">
               {subheading}
             </p>
           )}
           <a
             href={ctaHref}
-            className="inline-block bg-foreground text-white px-8 py-4 rounded-[var(--radius-sm)] hover:bg-accent transition-colors duration-[var(--motion-micro)]"
+            className="inline-block bg-foreground text-white px-6 sm:px-8 py-3 sm:py-4 rounded-[var(--radius-sm)] hover:bg-accent transition-colors duration-[var(--motion-micro)] text-sm sm:text-base touch-activation"
           >
             {ctaText}
           </a>
