@@ -28,6 +28,7 @@ jobs:
       READ_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/womanly
       SECRET_KEY: ci-secret-key
       REDIS_URL: redis://localhost:6379/0
+      PYTHONPATH: ${{ github.workspace }}/backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
