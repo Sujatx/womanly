@@ -6,18 +6,21 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Path, status
 from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
-from pydantic import BaseModel, ConfigDict, Field as PydanticField
 
 from app.db import get_session
+from app.di_container import get as di_get
+from pydantic import BaseModel
+from typing import List, Dict
 from app.deps import get_current_user
-from app.models import Order, OrderItem, User
+from app.models import Order, OrderItem, User, RefundRequest, ShippingUpdate, OrderStatusHistoryRead
 from app.models.product import ProductVariant
 from app.models.refund import Refund, OrderStatusHistory
 from app.models.inventory import refund_stock_for_order
 from app.core.exceptions import OrderNotFoundException
+from app.core.exceptions import ExternalServiceException
 from app.core.logging import get_structured_logger
 from app.services.razorpay_service import create_razorpay_refund
-from app.services.email_service import send_shipping_notification
+from app.services import send_shipping_notification
 
 router = APIRouter()
 logger = get_structured_logger(__name__)
@@ -25,42 +28,18 @@ logger = get_structured_logger(__name__)
 LOW_REFUND_RATE_THRESHOLD = 0.05  # Alert if >5% of orders refunded
 
 
-# ─────────────────────────── Schemas ───────────────────────────
-
-class RefundRequest(BaseModel):
-    reason: str = PydanticField(min_length=3, max_length=500)
-
-
-class ShippingUpdate(BaseModel):
-    tracking_number: str
-    shipping_provider: str
-    notes: Optional[str] = None
-
-
-class OrderStatusHistoryRead(BaseModel):
-    id: int
-    order_id: int
-    from_status: str
-    to_status: str
-    updated_by: Optional[int]
-    notes: Optional[str]
-    timestamp: str
-
-    model_config = ConfigDict(from_attributes=True)
-
-
 # ─────────────────────────── Helpers ───────────────────────────
 
 def _get_order_or_404(session: Session, order_id: int, user_id: int) -> Order:
     """Fetch a non-deleted order belonging to the current user."""
-    stmt = select(Order).where(
-        Order.id == order_id,
-        Order.user_id == user_id,
-        Order.deleted_at.is_(None)
-    ).options(selectinload(Order.items))
-    order = session.exec(stmt).first()
-    if not order:
+    order_repo = di_get("order_repo")
+    # Use repository to fetch by id then validate ownership and soft-delete
+    order = order_repo.get_by_id(session, order_id)
+    if not order or getattr(order, "deleted_at", None) is not None or order.user_id != user_id:
         raise OrderNotFoundException(order_id)
+    # Ensure items are loaded similarly to previous behavior
+    # Fallback: if not preloaded, access .items to trigger lazy load
+    _ = getattr(order, "items", None)
     return order
 
 
@@ -73,12 +52,8 @@ def _restore_inventory(session: Session, order: Order, user_id: int) -> None:
         # OrderItem currently stores product_id, not variant_id.
         # Fall back to the first variant for this product so stock is still restored.
         if not variant:
-            variant_stmt = (
-                select(ProductVariant)
-                .where(ProductVariant.product_id == item.product_id)
-                .order_by(ProductVariant.id)
-            )
-            variant = session.exec(variant_stmt).first()
+            product_repo = di_get("product_repo")
+            variant = product_repo.get_first_variant_for_product(session, item.product_id)
 
         if variant:
             refund_stock_for_order(
@@ -131,6 +106,8 @@ def cancel_order(
                 order_id=order.id,
                 razorpay_refund_id=razorpay_refund_id,
             )
+        except ExternalServiceException:
+            raise
         except Exception as e:
             logger.error("Razorpay refund failed during cancellation", order_id=order.id, error=str(e))
             raise HTTPException(
@@ -152,15 +129,13 @@ def cancel_order(
     # Restore inventory
     _restore_inventory(session, order, current_user.id)
 
-    # Transition order state (writes OrderStatusHistory)
-    order.update_status(
-        "cancelled",
-        updated_by=current_user.id,
-        notes="Cancelled by customer",
+    # Transition order state (writes OrderStatusHistory) via repository
+    order = di_get("order_repo").update_status(
         session=session,
+        order_id=order.id,
+        new_status="cancelled",
+        reason="Cancelled by customer",
     )
-
-    session.add(order)
     session.commit()
 
     logger.info("Order cancelled", order_id=order.id, user_id=current_user.id)
@@ -197,12 +172,7 @@ def request_refund(
         )
 
     # Check if a refund already exists
-    existing_refund = session.exec(
-        select(Refund).where(
-            Refund.order_id == order_id,
-            Refund.status.in_(["pending", "processed"])
-        )
-    ).first()
+    existing_refund = di_get("order_repo").has_pending_refund(session, order_id)
     if existing_refund:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -227,6 +197,8 @@ def request_refund(
                 order_id=order.id,
                 razorpay_refund_id=razorpay_refund_id,
             )
+        except ExternalServiceException:
+            raise
         except Exception as e:
             logger.error("Razorpay refund failed", order_id=order.id, error=str(e))
             refund_status = "failed"
@@ -246,13 +218,13 @@ def request_refund(
     # If refund processed, restore inventory and update order status
     if refund_status == "processed":
         _restore_inventory(session, order, current_user.id)
-        order.update_status(
-            "cancelled",
-            updated_by=current_user.id,
-            notes=f"Refunded: {body.reason}",
+        # Use repository to update status
+        di_get("order_repo").update_status(
             session=session,
+            order_id=order.id,
+            new_status="cancelled",
+            reason=f"Refunded: {body.reason}",
         )
-        session.add(order)
 
     session.commit()
     session.refresh(refund_record)
@@ -282,11 +254,7 @@ def get_order_history(
     # Verify ownership
     _get_order_or_404(session, order_id, current_user.id)
 
-    history = session.exec(
-        select(OrderStatusHistory)
-        .where(OrderStatusHistory.order_id == order_id)
-        .order_by(OrderStatusHistory.timestamp)
-    ).all()
+    history = di_get("order_repo").get_order_history(session, order_id)
 
     return [
         OrderStatusHistoryRead(
@@ -314,12 +282,7 @@ def shipping_webhook(
     Updates the tracking number on the order and emails the customer.
     """
     # Find the order by tracking number (the provider echoes it back)
-    stmt = select(Order).where(
-        Order.tracking_number == body.tracking_number,
-        Order.shipping_provider == provider,
-        Order.deleted_at.is_(None),
-    )
-    order = session.exec(stmt).first()
+    order = di_get("order_repo").get_by_tracking_number(session, provider, body.tracking_number)
 
     if not order:
         # Don't leak order existence — return 200 to provider
@@ -356,3 +319,31 @@ def shipping_webhook(
         tracking_number=body.tracking_number,
     )
     return {"received": True, "order_id": order.id}
+
+
+class OrderStatusUpdateItem(BaseModel):
+    id: int
+    new_status: str
+
+
+@router.post("/batch", status_code=status.HTTP_200_OK)
+def batch_update_order_status(
+    items: List[OrderStatusUpdateItem],
+    session: Session = Depends(get_session),
+):
+    """Batch update order statuses in a single transaction.
+
+    Each item must include `id` and `new_status`.
+    """
+    order_repo = di_get("order_repo")
+    results = []
+    try:
+        with session.begin():
+            for it in items:
+                order = order_repo.update_status(session=session, order_id=it.id, new_status=it.new_status)
+                results.append({"id": it.id, "status": order.status})
+            # commit
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Batch update failed: {str(e)}")
+
+    return {"updated": results}

@@ -1,14 +1,15 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException, status
-from sqlmodel import Session, select, col, func, SQLModel
-from sqlalchemy.orm import selectinload
+from sqlmodel import Session
 from app.db import get_read_session
-from app.models import Product, Category
-from app.models.product import ProductVariant, ProductImage
-from app.models.search import SearchLog
+from app.models import Product, Category, ProductVariantRead, ProductDetail, PaginationMeta, ProductList
+from app.models import SearchLog
 from app.deps import get_current_user_optional
 from app.core.logging import get_structured_logger
 from app.services.cache_service import CacheService
+from app.di_container import get as di_get
+from app.repositories.base import PaginationParams
+from pydantic import BaseModel, ConfigDict
 
 router = APIRouter()
 logger = get_structured_logger(__name__)
@@ -19,50 +20,6 @@ MAX_SKIP = 100000
 MIN_LIMIT = 1
 MAX_LIMIT = 500
 DEFAULT_LIMIT = 20
-
-# Schema for detail view including variants and images
-class ProductVariantRead(SQLModel):
-    id: int
-    sku: str
-    size: Optional[str]
-    color: Optional[str]
-    material: Optional[str]
-    price_adjustment: float
-    stock_quantity: int
-    reserved_quantity: int
-    available_stock: int
-    is_available: bool
-    estimated_total: Optional[float] = None  # Populated by the endpoint when base_price is known
-
-class ProductImageRead(SQLModel):
-    id: int
-    image_url: str
-    alt_text: Optional[str]
-    display_order: int
-    is_primary: bool
-
-class ProductDetail(SQLModel):
-    id: int
-    title: str
-    description: str
-    price: float
-    brand: Optional[str]
-    thumbnail: Optional[str]
-    category_slug: str
-    variants: List[ProductVariantRead]
-    product_images: List[ProductImageRead]
-
-class PaginationMeta(SQLModel):
-    """Pagination metadata."""
-    total: int
-    skip: int
-    limit: int
-    has_more: bool
-
-class ProductList(SQLModel):
-    data: List[ProductDetail]
-    pagination: PaginationMeta
-
 
 def _enrich_variants(product: "Product") -> List[ProductVariantRead]:
     """Add estimated_total and available_stock to variant reads."""
@@ -134,33 +91,24 @@ async def get_products(
                 pagination=PaginationMeta(total=total, skip=skip, limit=limit, has_more=has_more)
             )
 
-    # Cache miss or filtered query: fetch from database
-    query = select(Product).options(
-        selectinload(Product.variants),
-        selectinload(Product.product_images)
-    ).where(Product.deleted_at.is_(None))
-
-    if category:
-        query = query.where(Product.category_slug == category)
-    if q:
-        query = query.where(col(Product.title).ilike(f"%{q}%"))
-    if min_price is not None:
-        query = query.where(Product.price >= min_price)
-    if max_price is not None:
-        query = query.where(Product.price <= max_price)
-
-    count_query = select(func.count()).select_from(query.subquery())
-    total = session.exec(count_query).one()
-
-    results = session.exec(query.offset(skip).limit(limit)).all()
-
-    # Apply in_stock filter after fetch (requires variant data)
-    if in_stock is not None:
-        if in_stock:
-            results = [p for p in results if any(v.available_stock > 0 and v.is_available for v in p.variants)]
-        else:
-            results = [p for p in results if all(v.available_stock == 0 or not v.is_available for v in p.variants)]
-        total = len(results)
+    # Cache miss or filtered query: fetch from database via repository
+    product_repo = di_get("product_repo")
+    if not has_filters:
+        results, total = product_repo.get_active_products(
+            session=session,
+            pagination=PaginationParams(offset=skip, page_size=limit),
+        )
+    else:
+        results, total = product_repo.list_products(
+            session=session,
+            skip=skip,
+            limit=limit,
+            category=category,
+            q=q,
+            min_price=min_price,
+            max_price=max_price,
+            in_stock=in_stock,
+        )
 
     # Log search if query was provided
     if q:
@@ -181,6 +129,37 @@ async def get_products(
     )
 
 
+class ProductUpdateItem(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: int
+    title: Optional[str] = None
+    price: Optional[float] = None
+    thumbnail: Optional[str] = None
+
+
+@router.post("/batch-update", status_code=status.HTTP_200_OK)
+def batch_update_products(
+    items: List[ProductUpdateItem],
+    session: Session = Depends(get_read_session),
+):
+    """Batch update multiple products using the ProductRepository.
+
+    Each item must include `id`. Allowed fields: `title`, `price`, `thumbnail`, etc.
+    The repository's `update_many` will be used inside a transaction.
+    """
+    product_repo = di_get("product_repo")
+    payloads = [item.model_dump() for item in items]
+    try:
+        with session.begin():
+            updated = product_repo.update_many(session, payloads)
+            # Commit happens on context exit
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Batch update failed: {str(e)}")
+
+    return {"updated_count": len(updated)}
+
+
 @router.get("/search", response_model=ProductList)
 def search_products(
     q: str = Query(min_length=1, description="Search query"),
@@ -197,32 +176,17 @@ def search_products(
     Full-text product search with filters.
     Searches title AND description for relevance.
     """
-    base_query = select(Product).options(
-        selectinload(Product.variants),
-        selectinload(Product.product_images)
-    ).where(
-        Product.deleted_at.is_(None),
-        col(Product.title).ilike(f"%{q}%") |
-        col(Product.description).ilike(f"%{q}%")
+    product_repo = di_get("product_repo")
+    results, total = product_repo.search_products(
+        session=session,
+        query_text=q,
+        skip=skip,
+        limit=limit,
+        category=category,
+        min_price=min_price,
+        max_price=max_price,
+        in_stock=in_stock,
     )
-
-    if category:
-        base_query = base_query.where(Product.category_slug == category)
-    if min_price is not None:
-        base_query = base_query.where(Product.price >= min_price)
-    if max_price is not None:
-        base_query = base_query.where(Product.price <= max_price)
-
-    total_raw = session.exec(select(func.count()).select_from(base_query.subquery())).one()
-    results = session.exec(base_query.offset(skip).limit(limit)).all()
-
-    if in_stock is not None:
-        if in_stock:
-            results = [p for p in results if any(v.available_stock > 0 and v.is_available for v in p.variants)]
-        else:
-            results = [p for p in results if all(v.available_stock == 0 or not v.is_available for v in p.variants)]
-
-    total = len(results) if in_stock is not None else total_raw
 
     user_id = current_user.id if current_user else None
     _log_search(session, q, total, user_id)
@@ -236,32 +200,25 @@ def search_products(
 
 @router.get("/{product_id}", response_model=ProductDetail)
 def get_product(product_id: int, session: Session = Depends(get_read_session)):
-    statement = select(Product).where(
-        Product.id == product_id,
-        Product.deleted_at.is_(None)
-    ).options(
-        selectinload(Product.variants),
-        selectinload(Product.product_images)
-    )
-    product = session.exec(statement).first()
-    if not product:
+    product_repo = di_get("product_repo")
+    product = product_repo.get_by_id(session, product_id)
+    if not product or getattr(product, "deleted_at", None) is not None:
         raise HTTPException(status_code=404, detail="Product not found")
+    # ensure related attrs are available
+    _ = getattr(product, "variants", None)
+    _ = getattr(product, "product_images", None)
     return _build_product_detail(product)
 
 
 @router.get("/{product_id}/available-variants", response_model=List[ProductVariantRead])
 def get_available_variants(product_id: int, session: Session = Depends(get_read_session)):
     """Return only available (in-stock, is_available=True) variants for a product."""
-    product = session.exec(
-        select(Product).where(
-            Product.id == product_id,
-            Product.deleted_at.is_(None)
-        ).options(selectinload(Product.variants))
-    ).first()
-    if not product:
+    product_repo = di_get("product_repo")
+    product = product_repo.get_by_id(session, product_id)
+    if not product or getattr(product, "deleted_at", None) is not None:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    available = [v for v in product.variants if v.is_available and v.available_stock > 0]
+    available = [v for v in getattr(product, "variants", []) if v.is_available and v.available_stock > 0]
     return [
         ProductVariantRead(
             id=v.id, sku=v.sku, size=v.size, color=v.color, material=v.material,
@@ -281,7 +238,8 @@ async def get_categories(session: Session = Depends(get_read_session)):
         logger.info("✓ Cache HIT: categories")
         return [Category(**item) for item in cached_categories]
 
-    categories = session.exec(select(Category)).all()
+    category_repo = di_get("category_repo")
+    categories = category_repo.list_all(session)
     if categories:
         await CacheService.set_cached_categories([category.model_dump() for category in categories])
         logger.info("✓ Cached categories")

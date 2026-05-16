@@ -19,6 +19,16 @@ export function transformProduct(apiProduct: APIProduct): Product {
   const totalStock = apiProduct.variants.reduce((sum, v) => sum + v.stock_quantity, 0);
   const inStock = totalStock > 0;
 
+  const variantOptions = apiProduct.variants.map((variant) => ({
+    id: variant.id,
+    size: variant.size || '',
+    color: variant.color || '',
+    priceAdjustment: variant.price_adjustment,
+    stockQuantity: variant.stock_quantity,
+    availableStock: variant.available_stock ?? variant.stock_quantity,
+    isAvailable: variant.is_available,
+  }));
+
   // Process images: sort by display_order, prioritize primary
   const sortedImages = [...apiProduct.product_images].sort((a, b) => {
     if (a.is_primary && !b.is_primary) return -1;
@@ -54,5 +64,6 @@ export function transformProduct(apiProduct: APIProduct): Product {
     colors,
     inStock,
     badge,
+    variants: variantOptions,
   };
 }

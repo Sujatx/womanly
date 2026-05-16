@@ -5,55 +5,23 @@ The Wishlist and WishlistItem models already exist; this adds the API layer.
 
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select, SQLModel
+from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
 
 from app.db import get_session
 from app.deps import get_current_user
-from app.models import User, Wishlist, WishlistItem, Product
+from app.models import User, Wishlist, WishlistItem, Product, WishlistItemRead, WishlistAddRequest, WishlistRead
 from app.core.logging import get_structured_logger
+from app.di_container import get as di_get
 
 router = APIRouter()
 logger = get_structured_logger(__name__)
 
 
-# ─────────────────────────── Schemas ───────────────────────────
-
-class WishlistItemRead(SQLModel):
-    id: int
-    product_id: int
-    title: Optional[str] = None
-    thumbnail: Optional[str] = None
-    price: Optional[float] = None
-
-
-class WishlistAddRequest(SQLModel):
-    product_id: int
-
-
-class WishlistRead(SQLModel):
-    id: int
-    items: List[WishlistItemRead]
-    count: int
-
-
 # ─────────────────────────── Helpers ───────────────────────────
 
 def _get_or_create_wishlist(session: Session, user_id: int) -> Wishlist:
-    stmt = (
-        select(Wishlist)
-        .where(Wishlist.user_id == user_id)
-        .options(selectinload(Wishlist.items))
-    )
-    wishlist = session.exec(stmt).first()
-    if not wishlist:
-        wishlist = Wishlist(user_id=user_id)
-        session.add(wishlist)
-        session.commit()
-        session.refresh(wishlist)
-        # Re-fetch with items relationship
-        wishlist = session.exec(stmt).first()
-    return wishlist
+    return di_get("wishlist_repo").get_or_create(session, user_id)
 
 
 def _enrich_items(session: Session, items: List[WishlistItem]) -> List[WishlistItemRead]:
@@ -61,9 +29,12 @@ def _enrich_items(session: Session, items: List[WishlistItem]) -> List[WishlistI
     product_ids = [i.product_id for i in items]
     if not product_ids:
         return []
-    products = session.exec(
-        select(Product).where(Product.id.in_(product_ids), Product.deleted_at.is_(None))
-    ).all()
+    product_repo = di_get("product_repo")
+    products = []
+    for pid in product_ids:
+        p = product_repo.get_by_id(session, pid)
+        if p and getattr(p, "deleted_at", None) is None:
+            products.append(p)
     product_map = {p.id: p for p in products}
     result = []
     for item in items:
@@ -99,8 +70,8 @@ def add_to_wishlist(
 ):
     """Add a product to the wishlist. Idempotent — adding an already-wishlisted product returns 200."""
     # Verify product exists
-    product = session.get(Product, body.product_id)
-    if not product or product.deleted_at is not None:
+    product = di_get("product_repo").get_by_id(session, body.product_id)
+    if not product or getattr(product, "deleted_at", None) is not None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 
     wishlist = _get_or_create_wishlist(session, current_user.id)
@@ -108,8 +79,7 @@ def add_to_wishlist(
     # Check if already in wishlist
     already_exists = any(i.product_id == body.product_id for i in wishlist.items)
     if not already_exists:
-        new_item = WishlistItem(wishlist_id=wishlist.id, product_id=body.product_id)
-        session.add(new_item)
+        di_get("wishlist_repo").add_item(session, wishlist.id, body.product_id)
         session.commit()
         # Re-fetch
         wishlist = _get_or_create_wishlist(session, current_user.id)
@@ -132,7 +102,7 @@ def remove_from_wishlist(
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not in wishlist")
 
-    session.delete(item)
+    di_get("wishlist_repo").remove_item(session, wishlist.id, product_id)
     session.commit()
 
     # Re-fetch updated wishlist

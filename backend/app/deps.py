@@ -7,7 +7,7 @@ from app.db import get_session
 from app.config import settings
 from app.models import User
 from app.models.user import BlacklistedToken
-from app.security.token import verify_access_token
+from app.security import verify_access_token
 from datetime import datetime
 import logging
 

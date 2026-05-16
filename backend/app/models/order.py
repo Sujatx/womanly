@@ -136,3 +136,24 @@ class Order(SQLModel, table=True):
         elif new_status == "cancelled":
             self.cancelled_at = now
 
+
+class RefundRequest(SQLModel):
+    reason: str = Field(min_length=3, max_length=500)
+
+
+class ShippingUpdate(SQLModel):
+    tracking_number: str
+    shipping_provider: str
+    notes: Optional[str] = None
+
+
+class OrderStatusHistoryRead(SQLModel):
+    id: int
+    order_id: int
+    from_status: str
+    to_status: str
+    updated_by: Optional[int]
+    notes: Optional[str]
+    timestamp: str
+
+

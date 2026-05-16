@@ -5,8 +5,14 @@ from app.models.payment import PaymentVerificationLog
 from app.models import Order
 import logging
 from datetime import datetime
+import hmac
+import hashlib
+from app.core.circuit_breaker import CircuitBreaker
+from app.core.exceptions import ExternalServiceException
 
 logger = logging.getLogger(__name__)
+
+RAZORPAY_BREAKER = CircuitBreaker("razorpay", "razorpay", failure_threshold=3, recovery_timeout=60)
 
 # Initialize Razorpay client with secured credentials
 try:
@@ -35,13 +41,35 @@ def create_razorpay_order(amount: int, currency: str = "INR", notes: dict = None
         "notes": notes or {},
         "payment_capture": 1  # Auto-capture
     }
-    try:
+    def _create():
+        if not client:
+            raise RuntimeError("Razorpay client not initialized. Check credentials.")
+
         order = client.order.create(data=data)
         logger.info(f"Created Razorpay order: {order['id']}")
         return order
+
+    try:
+        return RAZORPAY_BREAKER.call(_create)
+    except ExternalServiceException:
+        raise
     except Exception as e:
         logger.error(f"Razorpay order creation failed: {str(e)}")
-        raise e
+        raise ExternalServiceException("razorpay", str(e), {"operation": "create_order"}) from e
+
+
+def verify_webhook_signature(payload: bytes, razorpay_signature: str) -> bool:
+    """Verify a Razorpay webhook signature using the configured webhook secret."""
+    secret = settings.RAZORPAY_WEBHOOK_SECRET.get_secret_value()
+    if not secret:
+        raise ExternalServiceException(
+            "razorpay",
+            "Razorpay webhook secret is not configured",
+            {"operation": "verify_webhook_signature"},
+        )
+
+    digest = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(digest, razorpay_signature)
 
 
 def verify_payment_signature(
@@ -193,17 +221,23 @@ def create_razorpay_refund(payment_id: str, amount: int, notes: dict = None) -> 
     Returns:
         Razorpay refund response dict
     """
-    if not client:
-        raise RuntimeError("Razorpay client not initialized. Check credentials.")
-
     data = {
         "amount": amount,
         "notes": notes or {},
     }
-    try:
+
+    def _refund():
+        if not client:
+            raise RuntimeError("Razorpay client not initialized. Check credentials.")
+
         refund = client.payment.refund(payment_id, data)
         logger.info(f"Razorpay refund created: {refund.get('id')} for payment {payment_id}")
         return refund
+
+    try:
+        return RAZORPAY_BREAKER.call(_refund)
+    except ExternalServiceException:
+        raise
     except Exception as e:
         logger.error(f"Razorpay refund failed for payment {payment_id}: {str(e)}")
-        raise e
+        raise ExternalServiceException("razorpay", str(e), {"operation": "refund", "payment_id": payment_id}) from e

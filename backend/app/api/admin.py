@@ -13,14 +13,16 @@ from app.db import get_session
 from app.models.user import User
 from app.models.order import Order
 from app.models.product import Product
-from app.core.soft_delete import (
+from app.core import (
     soft_delete_record,
     restore_record,
     hard_delete_record,
     only_deleted,
 )
-from app.core.exceptions import UnauthorizedException
+from app.core.exceptions import ForbiddenException
 from app.core.logging import StructuredLogger
+from app.di_container import get as di_get
+from app.deps import get_current_user
 
 logger = StructuredLogger(__name__)
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
@@ -30,17 +32,14 @@ EntityType = Literal["user", "order", "product"]
 
 
 def get_current_admin_user(
-    session: Session = Depends(get_session),
-    # TODO: Add proper admin authentication dependency
+    current_user: User = Depends(get_current_user),
 ) -> User:
     """
     Verify the current user is an admin.
-    
-    TODO: Implement proper admin role checking.
-    For now, this is a placeholder that should be replaced with actual admin auth.
     """
-    # Placeholder - should check user role/permissions
-    raise HTTPException(status_code=501, detail="Admin authentication not yet implemented")
+    if not current_user.is_superuser:
+        raise ForbiddenException("Admin privileges are required")
+    return current_user
 
 
 def get_entity_model(entity_type: EntityType):
@@ -166,13 +165,8 @@ async def list_deleted_entities(
     
     Useful for auditing and recovery operations.
     """
-    model = get_entity_model(entity_type)
-    
-    # Get only deleted records
-    query = only_deleted(select(model))
-    query = query.offset(skip).limit(limit)
-    
-    entities = session.exec(query).all()
+    repo = di_get(f"{entity_type}_repo")
+    entities = repo.list_deleted(session, skip=skip, limit=limit)
     
     return {
         "entity_type": entity_type,
@@ -204,18 +198,10 @@ async def get_deletion_stats(
     stats = {}
     
     for entity_type in ["user", "order", "product"]:
-        model = get_entity_model(entity_type)
-        
-        # Count active records
-        active_count = len(session.exec(
-            select(model).where(model.deleted_at.is_(None))
-        ).all())
-        
-        # Count soft-deleted records
-        deleted_count = len(session.exec(
-            select(model).where(model.deleted_at.isnot(None))
-        ).all())
-        
+        repo_name = f"{entity_type}_repo"
+        repo = di_get(repo_name)
+        active_count = repo.count_active(session) if repo else 0
+        deleted_count = repo.count_deleted(session) if repo else 0
         stats[entity_type] = {
             "active": active_count,
             "soft_deleted": deleted_count,

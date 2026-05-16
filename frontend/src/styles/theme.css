@@ -188,6 +188,14 @@
     outline-offset: 2px;
   }
 
+  /* Disable focus outline inside elements with .no-focus-outline (used for modal/auth pages)
+     Keeps global focus styling elsewhere for accessibility */
+  .no-focus-outline *:focus-visible {
+    outline: none;
+    outline-offset: 0;
+    box-shadow: none;
+  }
+
   /* Reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
     *,

@@ -3,17 +3,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from app.config import settings
 from app.api import health, admin, metrics
+from app.api.tasks_metrics import router as tasks_metrics_router
 from app.api.v1 import v1_router
 from app.core.logging import setup_logging, get_structured_logger
-from app.core.error_handler import add_error_handlers
-from app.core.versioning import deprecation_middleware, get_api_version_info
-from app.core.query_monitor import query_monitoring_middleware
-from app.middleware.metrics import metrics_middleware
-from app.middleware.security_headers import SecurityHeadersMiddleware
-from app.middleware.csrf import CSRFProtectionMiddleware
-from app.middleware.validation import RequestValidationMiddleware
-from app.middleware.rate_limit import RateLimitMiddleware
-from app.middleware.cache_headers import CacheControlMiddleware
+from app.core.error_handler import add_error_handlers, ResponseEnvelopeMiddleware
+from app.core import deprecation_middleware, get_api_version_info, query_monitoring_middleware
+from app.middleware import (
+    metrics_middleware,
+    SecurityHeadersMiddleware,
+    CSRFProtectionMiddleware,
+    RequestValidationMiddleware,
+    RateLimitMiddleware,
+    CacheControlMiddleware,
+)
 
 # Initialize Sentry for error monitoring (optional, only if DSN is configured)
 if settings.SENTRY_DSN:
@@ -55,6 +57,9 @@ def on_startup():
 
 # Add Gzip compression (compress responses > 500 bytes)
 app.add_middleware(GZipMiddleware, minimum_size=500)
+
+# Add response envelope middleware - wraps all responses in standard format
+app.add_middleware(ResponseEnvelopeMiddleware)
 
 # Add Cache-Control headers
 app.add_middleware(CacheControlMiddleware)
@@ -108,6 +113,9 @@ app.include_router(health.router, tags=["health"])
 
 # ========== METRICS ENDPOINT ==========
 app.include_router(metrics.router, tags=["metrics"])
+
+# ========== TASKS / DLQ METRICS ==========
+app.include_router(tasks_metrics_router, prefix="/api", tags=["tasks"])
 
 
 

@@ -1,7 +1,6 @@
 from pydantic import SecretStr, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
-from app.services.secrets_provider import get_secret_provider
 
 class Settings(BaseSettings):
     ENV_NAME: str = Field(default="dev", description="Environment: dev, staging, prod")
@@ -35,6 +34,7 @@ class Settings(BaseSettings):
     # Razorpay credentials (SecureStr to prevent logging)
     RAZORPAY_KEY_ID: SecretStr = Field(default=SecretStr(""), description="Razorpay API Key ID")
     RAZORPAY_KEY_SECRET: SecretStr = Field(default=SecretStr(""), description="Razorpay API Key Secret")
+    RAZORPAY_WEBHOOK_SECRET: SecretStr = Field(default=SecretStr(""), description="Razorpay webhook signing secret")
 
     # Frontend URL for email links (verification, password reset)
     FRONTEND_URL: str = Field(default="http://localhost:3000", description="Frontend base URL for email links")
@@ -75,6 +75,8 @@ class Settings(BaseSettings):
     def get_secret_provider(self):
         """Get configured secret provider instance."""
         try:
+            from app.services import get_secret_provider
+
             return get_secret_provider(self.SECRETS_PROVIDER_TYPE)
         except Exception as e:
             raise RuntimeError(f"Failed to initialize secret provider: {str(e)}")

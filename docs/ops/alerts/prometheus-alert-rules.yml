@@ -1,0 +1,79 @@
+groups:
+  - name: womanly-api-alerts
+    rules:
+      - alert: WomanlyHighErrorRate
+        expr: |
+          (
+            sum(rate(womanly_http_requests_total{status=~"5.."}[10m]))
+            /
+            sum(rate(womanly_http_requests_total[10m]))
+          ) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          service: womanly-api
+        annotations:
+          summary: "High API error rate"
+          description: "5xx error ratio has been above 5% for 10 minutes."
+
+      - alert: WomanlyPaymentFailureSpike
+        expr: |
+          (
+            sum(rate(womanly_http_requests_total{path=~"/api/v1/payments/(create-order|verify)",status=~"4..|5.."}[10m]))
+            /
+            sum(rate(womanly_http_requests_total{path=~"/api/v1/payments/(create-order|verify)"}[10m]))
+          ) > 0.10
+        for: 10m
+        labels:
+          severity: critical
+          service: womanly-api
+        annotations:
+          summary: "Payment failure spike"
+          description: "Payment endpoint failure ratio has been above 10% for 10 minutes."
+
+      - alert: WomanlyHighLatencyP95
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(womanly_http_request_duration_seconds_bucket[10m])) by (le)
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+          service: womanly-api
+        annotations:
+          summary: "High API latency p95"
+          description: "p95 latency has been above 1 second for 10 minutes."
+
+      - alert: WomanlyDbUnavailable
+        expr: |
+          probe_success{job="womanly-health"} == 0
+        for: 3m
+        labels:
+          severity: critical
+          service: womanly-api
+        annotations:
+          summary: "Database/readiness health probe failing"
+          description: "Readiness endpoint probe has failed for at least 3 minutes."
+
+      - alert: WomanlyBackupMissing24h
+        expr: |
+          (time() - womanly_last_backup_timestamp_seconds) > 86400
+        for: 15m
+        labels:
+          severity: critical
+          service: womanly-ops
+        annotations:
+          summary: "Backup not completed in last 24h"
+          description: "No successful backup metric observed in the last 24 hours."
+
+      - alert: WomanlyRestoreDrillMissing30d
+        expr: |
+          (time() - womanly_last_restore_drill_timestamp_seconds) > 2592000
+        for: 30m
+        labels:
+          severity: warning
+          service: womanly-ops
+        annotations:
+          summary: "Restore drill not completed in last 30 days"
+          description: "No successful restore drill metric observed in the last 30 days."

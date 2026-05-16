@@ -4,101 +4,32 @@ Shipping & Tax calculation endpoints.
 
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select, SQLModel
+from sqlmodel import Session, select
 
 from app.db import get_session
-from app.models.shipping import ShippingRate, Tax
+from app.models.shipping import (
+    ShippingRate,
+    Tax,
+    AddressInput,
+    CartItemInput,
+    ShippingCalculateRequest,
+    ShippingCalculateResponse,
+    TaxCalculateRequest,
+    TaxBreakdownItem,
+    TaxCalculateResponse,
+)
 from app.core.logging import get_structured_logger
+from app.di_container import get as di_get
 
 router = APIRouter()
 logger = get_structured_logger(__name__)
 
 
-# ─────────────────────────── Schemas ───────────────────────────
-
-class AddressInput(SQLModel):
-    country: str
-    state: Optional[str] = None
-    postal_code: Optional[str] = None
-
-
-class CartItemInput(SQLModel):
-    product_id: int
-    quantity: int
-    category_slug: Optional[str] = None
-
-
-class ShippingCalculateRequest(SQLModel):
-    address: AddressInput
-    items: List[CartItemInput]
-
-
-class ShippingCalculateResponse(SQLModel):
-    cost: float
-    delivery_days: int
-    provider: str = "standard"
-
-
-class TaxCalculateRequest(SQLModel):
-    address: AddressInput
-    items: List[CartItemInput]
-    subtotal: float
-
-
-class TaxBreakdownItem(SQLModel):
-    category: Optional[str]
-    rate: float
-    amount: float
-    description: Optional[str]
-
-
-class TaxCalculateResponse(SQLModel):
-    tax_amount: float
-    effective_rate: float
-    breakdown: List[TaxBreakdownItem]
-
-
 # ─────────────────────────── Helpers ───────────────────────────
 
 def _find_shipping_rate(session: Session, country: str, state: Optional[str], postal_code: Optional[str]) -> Optional[ShippingRate]:
-    """Find the best matching (most specific) active shipping rate."""
-    # 1. Exact: country + state + postal prefix
-    if postal_code and state:
-        rate = session.exec(
-            select(ShippingRate).where(
-                ShippingRate.country == country.upper(),
-                ShippingRate.state == state,
-                ShippingRate.is_active == True,
-            )
-        ).all()
-        # Filter by postal prefix
-        for r in rate:
-            if r.postal_code_pattern and postal_code.startswith(r.postal_code_pattern):
-                return r
-
-    # 2. Country + state
-    if state:
-        rate = session.exec(
-            select(ShippingRate).where(
-                ShippingRate.country == country.upper(),
-                ShippingRate.state == state,
-                ShippingRate.postal_code_pattern.is_(None),
-                ShippingRate.is_active == True,
-            )
-        ).first()
-        if rate:
-            return rate
-
-    # 3. Country only
-    rate = session.exec(
-        select(ShippingRate).where(
-            ShippingRate.country == country.upper(),
-            ShippingRate.state.is_(None),
-            ShippingRate.postal_code_pattern.is_(None),
-            ShippingRate.is_active == True,
-        )
-    ).first()
-    return rate
+    # Delegate to repository
+    return di_get("shipping_repo").find_shipping_rate(session, country, state, postal_code)
 
 
 # ─────────────────────────── Endpoints ───────────────────────────
@@ -163,24 +94,9 @@ def calculate_tax(
     applied_rates: dict = {}  # rate_id → TaxBreakdownItem
 
     for category in checked_categories:
-        # Build query: exact match (country + state + category), then fallbacks
-        for cat_filter in [category, None]:
-            state_filter_val = state if state else None
-
-            stmt = select(Tax).where(
-                Tax.country == country,
-                Tax.is_active == True,
-                Tax.category == cat_filter,
-            )
-            if state_filter_val:
-                stmt_state = stmt.where(Tax.state == state_filter_val)
-                tax_rule = session.exec(stmt_state).first()
-                if not tax_rule:
-                    tax_rule = session.exec(stmt.where(Tax.state.is_(None))).first()
-            else:
-                tax_rule = session.exec(stmt.where(Tax.state.is_(None))).first()
-
-            if tax_rule and tax_rule.id not in applied_rates:
+        tax_repo = di_get("tax_repo")
+        tax_rule = tax_repo.find_applicable_tax(session, country, state, category)
+        if tax_rule and tax_rule.id not in applied_rates:
                 # Prorate by items in this category
                 if category is not None:
                     cat_items = [i for i in body.items if i.category_slug == category]

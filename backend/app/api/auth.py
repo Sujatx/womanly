@@ -5,16 +5,16 @@ from sqlmodel import Session, select
 from app.db import get_session
 from app.models import User, UserCreate, UserRead, Token
 from app.models.user import EmailVerificationToken, RefreshToken, BlacklistedToken, CSRFToken
-from app.security.hashing import get_password_hash, verify_password
-from app.security.token import create_access_token, create_refresh_token, verify_refresh_token
+from app.security import get_password_hash, verify_password, create_access_token, create_refresh_token, verify_refresh_token
 from app.deps import get_current_user
-from app.services.email_service import send_verification_email
-from app.middleware.csrf import create_csrf_token_in_db
+from app.services import send_verification_email
+from app.middleware import create_csrf_token_in_db
 from jose import jwt
 from pydantic import BaseModel
 import uuid
 from datetime import datetime, timedelta
 from app.config import settings
+from app.di_container import get as di_get
 
 router = APIRouter()
 
@@ -46,12 +46,7 @@ async def signup(user_in: UserCreate, session: Session = Depends(get_session)):
     
     logger.info(f"Signup attempt for email: {user_in.email}")
     
-    user = session.exec(
-        select(User).where(
-            User.email == user_in.email,
-            User.deleted_at.is_(None)  # Check for non-deleted users
-        )
-    ).first()
+    user = di_get("user_repo").get_by_email(session, user_in.email)
     if user:
         logger.warning(f"Signup failed: User already exists - {user_in.email}")
         raise HTTPException(
@@ -108,12 +103,7 @@ async def signup(user_in: UserCreate, session: Session = Depends(get_session)):
 
 @router.post("/verify-email")
 def verify_email(token: str, session: Session = Depends(get_session)):
-    db_token = session.exec(
-        select(EmailVerificationToken)
-        .where(EmailVerificationToken.token == token)
-        .where(EmailVerificationToken.is_used == False)
-        .where(EmailVerificationToken.expires_at > datetime.utcnow())
-    ).first()
+    db_token = di_get("user_repo").get_verification_token(session, token)
     
     if not db_token:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
@@ -207,7 +197,7 @@ def login(credentials: LoginRequest, session: Session = Depends(get_session)):
             detail="Invalid email address"
         )
     
-    user = session.exec(select(User).where(User.email == email)).first()
+    user = di_get("user_repo").get_by_email(session, email)
     if not user:
         logger.warning(f"User not found: {email}")
         raise HTTPException(
@@ -274,7 +264,7 @@ def login_email(credentials: LoginRequest, session: Session = Depends(get_sessio
             detail="Invalid email address"
         )
     
-    user = session.exec(select(User).where(User.email == email)).first()
+    user = di_get("user_repo").get_by_email(session, email)
     if not user or not verify_password(credentials.password, user.hashed_password):
         # Return generic error to prevent email enumeration
         raise HTTPException(
@@ -332,9 +322,7 @@ def refresh_access_token(refresh_token_str: str, session: Session = Depends(get_
         )
     
     # Check if refresh token exists in database and is not revoked
-    db_token = session.exec(
-        select(RefreshToken).where(RefreshToken.token == refresh_token_str)
-    ).first()
+    db_token = di_get("user_repo").get_refresh_token(session, refresh_token_str)
     
     if not db_token or db_token.is_revoked or db_token.expires_at < datetime.utcnow():
         raise HTTPException(
@@ -344,7 +332,7 @@ def refresh_access_token(refresh_token_str: str, session: Session = Depends(get_
         )
     
     # Get user
-    user = session.exec(select(User).where(User.email == email)).first()
+    user = di_get("user_repo").get_by_email(session, email)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

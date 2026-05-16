@@ -1,25 +1,33 @@
 """
 Centralized exception classes for the application.
 All exceptions should inherit from AppException for consistent error handling.
+
+Exceptions use structured error codes from app.core.error_codes for consistent API responses.
 """
 
 from typing import Any, Dict, Optional
+from app.core.error_codes import ErrorCode, get_error_info
 
 
 class AppException(Exception):
-    """Base application exception."""
+    """Base application exception with structured error code."""
     
     def __init__(
         self,
         error_code: str,
         message: str,
-        status_code: int = 400,
+        status_code: int | None = None,
         details: Optional[Dict[str, Any]] = None,
     ):
         self.error_code = error_code
         self.message = message
-        self.status_code = status_code
         self.details = details or {}
+        
+        # If no status code provided, look it up from error codes
+        if status_code is None:
+            status_code, _, _ = get_error_info(error_code)
+        self.status_code = status_code
+        
         super().__init__(self.message)
 
 
@@ -30,9 +38,8 @@ class InvalidCredentialsException(AppException):
     
     def __init__(self, message: str = "Invalid email or password"):
         super().__init__(
-            error_code="INVALID_CREDENTIALS",
+            error_code=ErrorCode.AUTH_INVALID_CREDENTIALS,
             message=message,
-            status_code=401
         )
 
 
@@ -41,9 +48,8 @@ class UserAlreadyExistsException(AppException):
     
     def __init__(self, email: str):
         super().__init__(
-            error_code="USER_ALREADY_EXISTS",
+            error_code=ErrorCode.USER_ALREADY_EXISTS,
             message=f"User with email {email} already exists",
-            status_code=409,
             details={"field": "email", "value": email}
         )
 
@@ -53,9 +59,8 @@ class InvalidTokenException(AppException):
     
     def __init__(self, message: str = "Invalid or expired token"):
         super().__init__(
-            error_code="INVALID_TOKEN",
+            error_code=ErrorCode.AUTH_TOKEN_INVALID,
             message=message,
-            status_code=401
         )
 
 
@@ -64,9 +69,8 @@ class TokenExpiredException(AppException):
     
     def __init__(self, message: str = "Token has expired"):
         super().__init__(
-            error_code="TOKEN_EXPIRED",
+            error_code=ErrorCode.AUTH_TOKEN_EXPIRED,
             message=message,
-            status_code=401
         )
 
 
@@ -75,9 +79,8 @@ class UnauthorizedException(AppException):
     
     def __init__(self, message: str = "Authentication required"):
         super().__init__(
-            error_code="UNAUTHORIZED",
+            error_code=ErrorCode.AUTH_TOKEN_INVALID,
             message=message,
-            status_code=401
         )
 
 
@@ -86,9 +89,8 @@ class ForbiddenException(AppException):
     
     def __init__(self, message: str = "Access denied"):
         super().__init__(
-            error_code="FORBIDDEN",
+            error_code=ErrorCode.AUTH_INSUFFICIENT_PERMISSIONS,
             message=message,
-            status_code=403
         )
 
 
@@ -99,9 +101,8 @@ class ProductNotFoundException(AppException):
     
     def __init__(self, product_id: int):
         super().__init__(
-            error_code="PRODUCT_NOT_FOUND",
+            error_code=ErrorCode.INVENTORY_PRODUCT_NOT_FOUND,
             message=f"Product with ID {product_id} not found",
-            status_code=404,
             details={"resource": "product", "id": product_id}
         )
 
@@ -111,9 +112,8 @@ class CategoryNotFoundException(AppException):
     
     def __init__(self, category_slug: str):
         super().__init__(
-            error_code="CATEGORY_NOT_FOUND",
+            error_code=ErrorCode.INVENTORY_PRODUCT_NOT_FOUND,
             message=f"Category '{category_slug}' not found",
-            status_code=404,
             details={"resource": "category", "slug": category_slug}
         )
 
@@ -123,9 +123,8 @@ class OrderNotFoundException(AppException):
     
     def __init__(self, order_id: int):
         super().__init__(
-            error_code="ORDER_NOT_FOUND",
+            error_code=ErrorCode.ORDER_NOT_FOUND,
             message=f"Order with ID {order_id} not found",
-            status_code=404,
             details={"resource": "order", "id": order_id}
         )
 
@@ -135,9 +134,8 @@ class UserNotFoundException(AppException):
     
     def __init__(self, user_id: int):
         super().__init__(
-            error_code="USER_NOT_FOUND",
+            error_code=ErrorCode.USER_NOT_FOUND,
             message=f"User with ID {user_id} not found",
-            status_code=404,
             details={"resource": "user", "id": user_id}
         )
 
@@ -161,9 +159,8 @@ class ValidationException(AppException):
     
     def __init__(self, message: str, field: Optional[str] = None, details: Optional[Dict[str, Any]] = None):
         super().__init__(
-            error_code="VALIDATION_ERROR",
+            error_code=ErrorCode.VALIDATION_INVALID_FORMAT,
             message=message,
-            status_code=422,
             details=details or ({"field": field} if field else {})
         )
 
@@ -173,9 +170,8 @@ class InvalidPriceException(AppException):
     
     def __init__(self, message: str = "Price must be greater than 0"):
         super().__init__(
-            error_code="INVALID_PRICE",
+            error_code=ErrorCode.VALIDATION_INVALID_FORMAT,
             message=message,
-            status_code=422
         )
 
 
@@ -184,9 +180,8 @@ class InvalidStockQuantityException(AppException):
     
     def __init__(self, message: str = "Stock quantity must be non-negative"):
         super().__init__(
-            error_code="INVALID_STOCK_QUANTITY",
+            error_code=ErrorCode.VALIDATION_INVALID_FORMAT,
             message=message,
-            status_code=422
         )
 
 
@@ -195,9 +190,8 @@ class InvalidPaginationException(AppException):
     
     def __init__(self, field: str, min_val: int, max_val: int):
         super().__init__(
-            error_code="INVALID_PAGINATION",
+            error_code=ErrorCode.VALIDATION_INVALID_PAGINATION,
             message=f"{field} must be between {min_val} and {max_val}",
-            status_code=422,
             details={"field": field, "min": min_val, "max": max_val}
         )
 
@@ -209,9 +203,8 @@ class PaymentFailedException(AppException):
     
     def __init__(self, message: str = "Payment processing failed", details: Optional[Dict[str, Any]] = None):
         super().__init__(
-            error_code="PAYMENT_FAILED",
+            error_code=ErrorCode.PAYMENT_FAILED,
             message=message,
-            status_code=402,  # Payment Required
             details=details
         )
 
@@ -221,9 +214,8 @@ class InvalidSignatureException(AppException):
     
     def __init__(self, message: str = "Invalid payment signature"):
         super().__init__(
-            error_code="INVALID_SIGNATURE",
+            error_code=ErrorCode.VALIDATION_INVALID_FORMAT,
             message=message,
-            status_code=400
         )
 
 
@@ -232,9 +224,8 @@ class DuplicatePaymentException(AppException):
     
     def __init__(self, message: str = "Duplicate payment request"):
         super().__init__(
-            error_code="DUPLICATE_PAYMENT",
+            error_code=ErrorCode.PAYMENT_DUPLICATE,
             message=message,
-            status_code=409  # Conflict
         )
 
 
@@ -245,9 +236,8 @@ class InsufficientStockException(AppException):
     
     def __init__(self, variant_id: int, available: int = 0, requested: int = 1):
         super().__init__(
-            error_code="INSUFFICIENT_STOCK",
+            error_code=ErrorCode.INVENTORY_INSUFFICIENT,
             message=f"Insufficient stock for variant {variant_id}. Available: {available}, Requested: {requested}",
-            status_code=409,  # Conflict
             details={"variant_id": variant_id, "available": available, "requested": requested}
         )
 
@@ -257,9 +247,8 @@ class OutOfStockException(AppException):
     
     def __init__(self, variant_id: int):
         super().__init__(
-            error_code="OUT_OF_STOCK",
+            error_code=ErrorCode.INVENTORY_OUT_OF_STOCK,
             message=f"Variant {variant_id} is out of stock",
-            status_code=409,
             details={"variant_id": variant_id}
         )
 
@@ -271,9 +260,8 @@ class InvalidOrderTransitionException(AppException):
     
     def __init__(self, current_status: str, requested_status: str):
         super().__init__(
-            error_code="INVALID_ORDER_TRANSITION",
+            error_code=ErrorCode.ORDER_INVALID_STATE_TRANSITION,
             message=f"Cannot transition from '{current_status}' to '{requested_status}'",
-            status_code=400,
             details={"current_status": current_status, "requested_status": requested_status}
         )
 
@@ -283,9 +271,8 @@ class OrderAlreadyCanceledException(AppException):
     
     def __init__(self, order_id: int):
         super().__init__(
-            error_code="ORDER_ALREADY_CANCELLED",
+            error_code=ErrorCode.ORDER_ALREADY_CANCELLED,
             message=f"Order {order_id} has already been cancelled",
-            status_code=400,
             details={"order_id": order_id}
         )
 
@@ -297,9 +284,8 @@ class ConfigurationException(AppException):
     
     def __init__(self, message: str):
         super().__init__(
-            error_code="CONFIGURATION_ERROR",
+            error_code=ErrorCode.INTERNAL_CONFIG_ERROR,
             message=message,
-            status_code=500
         )
 
 
@@ -309,10 +295,14 @@ class ExternalServiceException(AppException):
     """External service (Razorpay, Email, etc.) failed."""
     
     def __init__(self, service_name: str, message: str, details: Optional[Dict[str, Any]] = None):
+        code_map = {
+            "razorpay": ErrorCode.EXTERNAL_PAYMENT_UNAVAILABLE,
+            "email": ErrorCode.EXTERNAL_EMAIL_UNAVAILABLE,
+            "shipping": ErrorCode.EXTERNAL_SHIPPING_UNAVAILABLE,
+        }
         super().__init__(
-            error_code=f"{service_name.upper()}_ERROR",
+            error_code=code_map.get(service_name.lower(), ErrorCode.EXTERNAL_SERVICE_ERROR),
             message=f"{service_name} service error: {message}",
-            status_code=503,  # Service Unavailable
             details=details
         )
 
@@ -322,9 +312,8 @@ class EmailServiceException(AppException):
     
     def __init__(self, message: str = "Failed to send email"):
         super().__init__(
-            error_code="EMAIL_SERVICE_ERROR",
+            error_code=ErrorCode.EXTERNAL_EMAIL_UNAVAILABLE,
             message=message,
-            status_code=503
         )
 
 
@@ -333,9 +322,8 @@ class RazorpayException(AppException):
     
     def __init__(self, message: str, error_code: Optional[str] = None, details: Optional[Dict[str, Any]] = None):
         super().__init__(
-            error_code=error_code or "RAZORPAY_ERROR",
+            error_code=error_code or ErrorCode.PAYMENT_RAZORPAY_ERROR,
             message=message,
-            status_code=502,  # Bad Gateway
             details=details
         )
 
@@ -347,8 +335,7 @@ class InternalServerException(AppException):
     
     def __init__(self, message: str = "Internal server error", details: Optional[Dict[str, Any]] = None):
         super().__init__(
-            error_code="INTERNAL_SERVER_ERROR",
+            error_code=ErrorCode.INTERNAL_ERROR,
             message=message,
-            status_code=500,
             details=details
         )

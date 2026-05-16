@@ -66,6 +66,11 @@ export interface APIWishlist {
   count: number;
 }
 
+export interface CheckoutItemInput {
+  variant_id: number;
+  quantity: number;
+}
+
 export interface APIOrder {
   id: number;
   status: string;

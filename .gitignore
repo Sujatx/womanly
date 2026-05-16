@@ -112,6 +112,11 @@ docker-data/
 postgres-data/
 pgdata/
 
+# Backups
+backups/
+*.sqlc
+*.sqlc.sha256
+
 # Docker
 .dockerignore
 docker-compose.override.yml
@@ -138,15 +143,16 @@ GEMINI.md
 .scratch/
 
 # Internal planning/progress docs (local only)
+ARCHITECTURE_BUILD_PLAN.md
 END_TO_END_BUILD_PLAN.md
 IMAGE_TAGGING_POLICY.md
 PRD_IMPLEMENTATION_CHECKLIST.md
 Skills/
-docs/
 lighthousereport.html
 MOBILE_OPTIMIZATION.md
 PERFORMANCE_GUIDE.md
 SECURITY_HEADERS.md
+.github/workflows/copilot-instructions.md
 
 
 # Security & Secrets

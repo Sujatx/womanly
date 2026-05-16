@@ -10,21 +10,23 @@ from app.models.product import ProductVariant
 from app.models.idempotency import IdempotencyKey
 from app.models.inventory import deduct_stock_for_order
 from app.deps import get_current_user
-from app.services.razorpay_service import create_razorpay_order, verify_payment_signature
-from app.services.email_service import send_order_confirmation
+from app.services.razorpay_service import create_razorpay_order, verify_payment_signature, verify_webhook_signature
+from app.services import send_order_confirmation
 from app.api.cart import get_cart_with_items
-from app.middleware.idempotency import get_idempotency_key_from_request, store_idempotency_key, get_cached_response
+from app.middleware import get_idempotency_key_from_request, store_idempotency_key, get_cached_response
 from app.core.exceptions import (
     InsufficientStockException,
     CartNotFoundException,
     PaymentFailedException,
     OrderNotFoundException,
-    InvalidSignatureException
+    InvalidSignatureException,
+    ExternalServiceException,
 )
 from app.core.logging import get_structured_logger
 from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
 import json
+from app.di_container import get as di_get
 
 router = APIRouter()
 logger = get_structured_logger(__name__)
@@ -34,11 +36,80 @@ class PaymentVerify(BaseModel):
     razorpay_payment_id: str
     razorpay_signature: str
 
+
+class CheckoutItemInput(BaseModel):
+    variant_id: int
+    quantity: int = Field(ge=1)
+
+
+class CheckoutRequest(BaseModel):
+    items: list[CheckoutItemInput] | None = None
+
+
+class RazorpayWebhookPayload(BaseModel):
+    event: str
+    payload: dict
+
+
+def _get_webhook_order_info(payload: dict) -> tuple[str | None, str | None]:
+    payment = payload.get("payment", {}).get("entity", {})
+    order = payload.get("order", {}).get("entity", {})
+    razorpay_order_id = payment.get("order_id") or order.get("id")
+    razorpay_payment_id = payment.get("id")
+    return razorpay_order_id, razorpay_payment_id
+
+
+def _apply_razorpay_webhook(session: Session, event_name: str, payload: dict) -> dict:
+    razorpay_order_id, razorpay_payment_id = _get_webhook_order_info(payload)
+
+    if not razorpay_order_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Webhook payload missing Razorpay order reference",
+        )
+
+    order = session.exec(select(Order).where(Order.razorpay_order_id == razorpay_order_id)).first()
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order not found for Razorpay order {razorpay_order_id}",
+        )
+
+    if event_name in {"payment.captured", "order.paid"}:
+        if order.status != "paid":
+            order.update_status("paid", notes="Payment confirmed via Razorpay webhook", session=session)
+            order.razorpay_payment_id = razorpay_payment_id or order.razorpay_payment_id
+            session.add(order)
+            session.commit()
+            session.refresh(order)
+        return {
+            "status": "processed",
+            "order_id": order.id,
+            "order_status": order.status,
+            "event": event_name,
+        }
+
+    if event_name == "payment.failed":
+        return {
+            "status": "ignored",
+            "order_id": order.id,
+            "order_status": order.status,
+            "event": event_name,
+        }
+
+    return {
+        "status": "ignored",
+        "order_id": order.id,
+        "order_status": order.status,
+        "event": event_name,
+    }
+
 @router.post("/create-order")
 async def create_order(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
     request: Request = None,
+    payload: CheckoutRequest | None = None,
     idempotency_key: str = Header(None, alias="Idempotency-Key")
 ):
     """
@@ -69,24 +140,25 @@ async def create_order(
     
     # ========== BEGIN ATOMIC CHECKOUT TRANSACTION ==========
     try:
-        # 1. Get Cart with items
-        cart = get_cart_with_items(session, current_user.id)
-        if not cart or not cart.items:
+        # 1. Resolve checkout items from explicit payload or the user's cart
+        checkout_items = payload.items if payload and payload.items else None
+        cart = None
+        if checkout_items is None:
+            cart = get_cart_with_items(session, current_user.id)
+            if not cart or not cart.items:
+                raise CartNotFoundException(current_user.id)
+            checkout_items = [CheckoutItemInput(variant_id=item.variant_id, quantity=item.quantity) for item in cart.items]
+        elif len(checkout_items) == 0:
             raise CartNotFoundException(current_user.id)
         
         # 2. Validate stock availability and calculate total
         total_amount = 0.0
         variant_checks = []  # Store variant checks for later stock deduction
         
-        for item in cart.items:
+        for item in checkout_items:
             # Get variant with FOR UPDATE lock and eagerly load product to prevent N+1
-            variant_stmt = (
-                select(ProductVariant)
-                .where(ProductVariant.id == item.variant_id)
-                .options(selectinload(ProductVariant.product))
-                .with_for_update()
-            )
-            variant = session.exec(variant_stmt).first()
+            product_repo = di_get("product_repo")
+            variant = product_repo.get_variant_for_update(session, item.variant_id)
             
             if not variant:
                 logger.error("Variant not found in checkout", variant_id=item.variant_id)
@@ -178,6 +250,9 @@ async def create_order(
                 amount=amount_paise,
                 notes={"db_order_id": str(db_order.id), "user_id": str(current_user.id)}
             )
+        except ExternalServiceException:
+            session.rollback()
+            raise
         except Exception as e:
             logger.error(
                 "Razorpay order creation failed",
@@ -282,11 +357,7 @@ async def verify_payment(
         raise InvalidSignatureException()
         
     # 2. Update Order Status
-    statement = select(Order).where(
-        Order.razorpay_order_id == data.razorpay_order_id,
-        Order.deleted_at.is_(None)  # Exclude soft-deleted orders
-    )
-    order = session.exec(statement).first()
+    order = di_get("order_repo").get_by_razorpay_order_id(session, data.razorpay_order_id)
     
     if not order:
         logger.error(
@@ -314,13 +385,9 @@ async def verify_payment(
     order.razorpay_payment_id = data.razorpay_payment_id
     session.add(order)
     
-    # 3. Clear Cart
-    cart_statement = select(Cart).where(Cart.user_id == current_user.id)
-    cart = session.exec(cart_statement).first()
-    if cart:
-        session.delete(cart)
-        
-    session.commit()
+    # 3. Clear Cart using repository
+    cart_repo = di_get("cart_repo")
+    cart_repo.clear_cart(session, current_user.id)
     
     logger.info(
         "Payment verified successfully",
@@ -335,15 +402,42 @@ async def verify_payment(
     
     return {"status": "success", "order_id": order.id}
 
+
+@router.post("/webhooks/razorpay", status_code=status.HTTP_200_OK)
+async def razorpay_webhook(
+    request: Request,
+    session: Session = Depends(get_session),
+    razorpay_signature: str = Header(None, alias="X-Razorpay-Signature"),
+):
+    """Process Razorpay webhook events and finalize payment state."""
+    if not razorpay_signature:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing X-Razorpay-Signature header",
+        )
+
+    raw_body = await request.body()
+    if not verify_webhook_signature(raw_body, razorpay_signature):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Razorpay webhook signature",
+        )
+
+    try:
+        payload = RazorpayWebhookPayload.model_validate_json(raw_body)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid Razorpay webhook payload",
+        )
+
+    return _apply_razorpay_webhook(session, payload.event, payload.payload)
+
 @router.get("/orders/me", response_model=List[Order])
 def get_my_orders(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    statement = (
-        select(Order)
-        .where(Order.user_id == current_user.id)
-        .order_by(Order.created_at.desc())
-        .options(selectinload(Order.items))
-    )
-    return session.exec(statement).all()
+    order_repo = di_get("order_repo")
+    orders, _ = order_repo.get_orders_by_user(session=session, user_id=current_user.id)
+    return orders

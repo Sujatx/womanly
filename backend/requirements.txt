@@ -15,3 +15,7 @@ bleach
 redis
 sentry-sdk[fastapi]
 prometheus-client
+pytest
+prometheus-client
+celery[redis]>=5.2
+redis>=4.5

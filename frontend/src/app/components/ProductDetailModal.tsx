@@ -53,10 +53,15 @@ export function ProductDetailModal({ product, onClose, onAddToCart }: ProductDet
   const handleAddToCart = () => {
     if (!selectedSize || !selectedColor) return;
 
+    const matchingVariant = product.variants?.find(
+      (variant) => variant.size === selectedSize && variant.color === selectedColor,
+    );
+
     onAddToCart({
       quantity,
       selectedSize,
       selectedColor,
+      variantId: matchingVariant?.id,
     });
   };
 
@@ -201,7 +206,7 @@ export function ProductDetailModal({ product, onClose, onAddToCart }: ProductDet
                       <label className="block mb-3 font-medium">
                         Color: {selectedColor}
                       </label>
-                      <div className="flex gap-3">
+                      <div className="flex flex-wrap gap-3">
                         {product.colors.map((color) => (
                           <button
                             key={color}
@@ -229,7 +234,7 @@ export function ProductDetailModal({ product, onClose, onAddToCart }: ProductDet
                           Size Guide
                         </button>
                       </div>
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                         {product.sizes.map((size) => (
                           <button
                             key={size}

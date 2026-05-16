@@ -2,7 +2,7 @@
 Shipping and Tax models.
 """
 
-from typing import Optional
+from typing import List, Optional
 from sqlmodel import SQLModel, Field
 
 
@@ -44,3 +44,45 @@ class Tax(SQLModel, table=True):
     category: Optional[str] = Field(default=None, description="Product category slug (None = all categories)")
     description: Optional[str] = Field(default=None)
     is_active: bool = Field(default=True)
+
+
+class AddressInput(SQLModel):
+    country: str
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
+
+
+class CartItemInput(SQLModel):
+    product_id: int
+    quantity: int
+    category_slug: Optional[str] = None
+
+
+class ShippingCalculateRequest(SQLModel):
+    address: AddressInput
+    items: List[CartItemInput]
+
+
+class ShippingCalculateResponse(SQLModel):
+    cost: float
+    delivery_days: int
+    provider: str = "standard"
+
+
+class TaxCalculateRequest(SQLModel):
+    address: AddressInput
+    items: List[CartItemInput]
+    subtotal: float
+
+
+class TaxBreakdownItem(SQLModel):
+    category: Optional[str]
+    rate: float
+    amount: float
+    description: Optional[str]
+
+
+class TaxCalculateResponse(SQLModel):
+    tax_amount: float
+    effective_rate: float
+    breakdown: List[TaxBreakdownItem]

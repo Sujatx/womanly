@@ -2,7 +2,7 @@ from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import Column, JSON
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import field_validator
 
 # Forward reference
@@ -19,6 +19,16 @@ class ProductImage(SQLModel, table=True):
     is_primary: bool = Field(default=False)
     
     product: "Product" = Relationship(back_populates="product_images")
+
+
+class SearchLog(SQLModel, table=True):
+    """Records product search queries for analytics."""
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    query: str = Field(index=True, description="Search query string")
+    results_count: int = Field(ge=0, description="Number of results returned")
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id", description="Null for anonymous")
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)
 
 class ProductVariant(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -89,3 +99,51 @@ class Product(ProductBase, table=True):
     def is_deleted(self) -> bool:
         """Check if product is soft deleted."""
         return self.deleted_at is not None
+
+
+class ProductVariantRead(SQLModel):
+    id: int
+    sku: str
+    size: Optional[str]
+    color: Optional[str]
+    material: Optional[str]
+    price_adjustment: float
+    stock_quantity: int
+    reserved_quantity: int
+    available_stock: int
+    is_available: bool
+    estimated_total: Optional[float] = None
+
+
+class ProductImageRead(SQLModel):
+    id: int
+    image_url: str
+    alt_text: Optional[str]
+    display_order: int
+    is_primary: bool
+
+
+class ProductDetail(SQLModel):
+    id: int
+    title: str
+    description: str
+    price: float
+    brand: Optional[str]
+    thumbnail: Optional[str]
+    category_slug: str
+    variants: List[ProductVariantRead]
+    product_images: List[ProductImageRead]
+
+
+class PaginationMeta(SQLModel):
+    """Pagination metadata."""
+
+    total: int
+    skip: int
+    limit: int
+    has_more: bool
+
+
+class ProductList(SQLModel):
+    data: List[ProductDetail]
+    pagination: PaginationMeta

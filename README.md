@@ -1,38 +1,82 @@
 # Womanly E-commerce Platform
 
-Modern e-commerce platform with FastAPI backend and React frontend.
+Production-ready e-commerce platform with a FastAPI backend and React frontend.
 
-## Tech Stack
+## Highlights
 
-**Backend:**
-- FastAPI 0.115+ with async/await
-- PostgreSQL 15 with SQLModel ORM
-- Redis 7 for caching
-- Alembic database migrations
-- JWT auth with refresh/logout flows
-- Resend SMTP for verification emails
-- Sentry error monitoring
+- FastAPI + SQLModel + Alembic for the API and migrations
+- PostgreSQL 15 and Redis 7
+- JWT auth with email verification flows
+- Celery background tasks via Redis
+- Docker Compose for dev and prod
+- Sentry error monitoring and Prometheus metrics hooks
+- GitHub Actions CI/CD pipeline
 
-**Frontend:**
-- React 18 + TypeScript
-- Vite 6 + Tailwind CSS 4
-- Hash-based routing (`#/...`)
-- Lazy-loaded route/components
-- PWA basics (service worker + manifest)
+## Architecture
 
-## Production Deployment (Phase 5 Baseline)
+**Backend:** FastAPI, SQLModel, Alembic, JWT auth
+**Frontend:** React 18, Vite 6, Tailwind CSS 4
+**Data/Infra:** PostgreSQL 15, Redis 7
+**Background tasks:** Celery worker + Redis broker
+
+## Repository Layout
+
+- backend/ : API, models, services, tasks
+- frontend/ : React app
+- docker-compose.yml : local dev stack
+- docker-compose.prod.yml : production stack
+- scripts/ : backup, restore, ops utilities
+- docs/ops/ : runbooks and release evidence
+- secrets/ : Docker secrets files (gitignored)
+
+## Local Development
+
+1) Create backend/.env (required for SECRET_KEY).
+
+```bash
+cp .env.example backend/.env
+```
+
+2) Start the dev stack.
+
+```bash
+docker compose up -d --build
+```
+
+3) Run migrations.
+
+```bash
+docker compose exec backend alembic upgrade head
+```
+
+4) (Optional) Run the frontend dev server.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Local endpoints
+
+- Frontend (dev server): http://localhost:5173
+- Backend API: http://localhost:8000
+- Swagger: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
+## Production Deployment
 
 ### Prerequisites
 
 - Docker Engine with Compose v2
-- Production DNS and TLS termination in front of containers
-- Access to a container registry (Docker Hub, ECR, GHCR, etc.)
+- DNS + TLS termination in front of containers
+- Container registry access (GHCR, ECR, Docker Hub, etc.)
 
 ### 1) Prepare production env
 
 - Copy .env.prod.example to .env.prod
 - Set non-secret values in .env.prod
-- Place secret values in files under secrets/
+- Place secret values in files under secrets/ (see secrets/README.md)
 
 Required secret files:
 
@@ -47,7 +91,7 @@ Required secret files:
 
 ```bash
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
-docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T backend alembic upgrade head
 ```
 
 ### 3) Runtime endpoints (default ports)
@@ -56,44 +100,42 @@ docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
 - Backend API: http://localhost:8000
 - Swagger: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
+- Health: http://localhost:8000/health
 
-### Production artifacts added
+## CI/CD
 
-- backend/Dockerfile.prod (multi-stage, health check, non-root)
-- backend/docker/entrypoint.prod.sh (loads Docker secret files into env)
-- frontend/Dockerfile.prod + frontend/nginx.prod.conf
-- docker-compose.prod.yml (versioned image tags, secrets files, health checks)
-- .github/workflows/ci-cd.yml (PR checks, image build, staging/prod deploy placeholders)
-- scripts/backup_db.ps1 and scripts/restore_db.ps1
+GitHub Actions workflow builds, tests, and publishes container images. Deploy steps run on main and require environment secrets.
 
-### Database backup and restore
+## Backups and Restore
+
+Run backups and restores via scripts (schedule externally via cron/CI):
 
 ```powershell
-# Backup (keeps 30-day chain by default)
+# Backup (default 30-day retention)
 powershell -ExecutionPolicy Bypass -File ./scripts/backup_db.ps1 -EnvFilePath ./.env.prod
 
 # Restore from a specific backup file
 powershell -ExecutionPolicy Bypass -File ./scripts/restore_db.ps1 -BackupFile ./backups/womanly_YYYYMMDD_HHMMSS.sqlc -EnvFilePath ./.env.prod
 ```
 
-Use task scheduler or CI cron to run backup_db.ps1 daily, then upload artifacts to encrypted object storage (S3/GCS/Azure Blob).
-
-## API Auth Example
+Linux hosts:
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/auth/signup \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email":"user@example.com",
-    "password":"securepassword",
-    "full_name":"User Name"
-  }'
+bash ./scripts/backup_db.sh ./.env.prod ./backups 30
+```
+
+See docs/ops/backup-runbook.md for operational details.
+
+## Seed Data
+
+```bash
+python backend/scripts/seed.py
 ```
 
 ## Notes
 
-- Verification links use hash routes: `#/auth/verify?token=...`
-- Use a verified sender domain in Resend for production deliverability.
+- Verification links use hash routes: #/auth/verify?token=...
+- Use a verified sender domain for production email deliverability.
 
 ## License
 

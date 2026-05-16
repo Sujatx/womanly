@@ -4,6 +4,7 @@ from sqlmodel import Session, select
 from app.db import get_session
 from app.models import Address, AddressRead, User
 from app.deps import get_current_user
+from app.di_container import get as di_get
 
 router = APIRouter()
 
@@ -13,7 +14,7 @@ def get_addresses(
     session: Session = Depends(get_session)
 ):
     statement = select(Address).where(Address.user_id == current_user.id)
-    return session.exec(statement).all()
+    return di_get("address_repo").list_by_user(session, current_user.id)
 
 @router.post("/", response_model=AddressRead)
 def create_address(
@@ -26,11 +27,7 @@ def create_address(
     
     # If this is set as default, unset others
     if address_in.is_default:
-        statement = select(Address).where(Address.user_id == current_user.id)
-        existing = session.exec(statement).all()
-        for addr in existing:
-            addr.is_default = False
-            session.add(addr)
+        di_get("address_repo").unset_defaults(session, current_user.id)
             
     session.add(address_in)
     session.commit()
@@ -53,11 +50,7 @@ def update_address(
         setattr(db_address, key, value)
         
     if address_update.is_default:
-        statement = select(Address).where(Address.user_id == current_user.id).where(Address.id != address_id)
-        others = session.exec(statement).all()
-        for addr in others:
-            addr.is_default = False
-            session.add(addr)
+        di_get("address_repo").unset_defaults(session, current_user.id, exclude_id=address_id)
             
     session.add(db_address)
     session.commit()

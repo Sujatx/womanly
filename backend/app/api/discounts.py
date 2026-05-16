@@ -12,38 +12,20 @@ from datetime import datetime, timezone
 from app.db import get_session
 from app.deps import get_current_user
 from app.models import User
-from app.models.discount import Coupon, CouponUsage, BulkDiscount, CustomerTier
+from app.models.discount import (
+    Coupon,
+    CouponUsage,
+    BulkDiscount,
+    CustomerTier,
+    CouponValidateResponse,
+    CouponCreate,
+    BulkDiscountCreate,
+)
 from app.core.logging import get_structured_logger
+from app.di_container import get as di_get
 
 router = APIRouter()
 logger = get_structured_logger(__name__)
-
-
-# ─────────────────────────── Schemas ───────────────────────────
-
-class CouponValidateResponse(SQLModel):
-    valid: bool
-    discount_type: Optional[str] = None
-    discount_amount: Optional[float] = None   # Computed from order_total if provided
-    discount_value: Optional[float] = None    # Raw value from coupon
-    message: str
-
-
-class CouponCreate(SQLModel):
-    code: str
-    discount_type: str
-    value: float
-    max_uses: Optional[int] = None
-    uses_per_user: int = 1
-    expiry_date: Optional[datetime] = None
-    min_order_value: float = 0.0
-    is_active: bool = True
-
-
-class BulkDiscountCreate(SQLModel):
-    product_id: int
-    min_quantity: int
-    discount_percent: float
 
 
 # ─────────────────────────── Helpers ───────────────────────────
@@ -77,18 +59,13 @@ def validate_coupon_for_user(
         return False, f"Minimum order of ₹{coupon.min_order_value:.2f} required to use this coupon."
 
     if coupon.max_uses is not None:
-        total_uses = session.exec(
-            select(func.count(CouponUsage.id)).where(CouponUsage.coupon_id == coupon.id)
-        ).one()
+        discount_repo = di_get("discount_repo")
+        total_uses = discount_repo.count_coupon_uses(session, coupon.id)
         if total_uses >= coupon.max_uses:
             return False, "This coupon has reached its maximum usage limit."
 
-    user_uses = session.exec(
-        select(func.count(CouponUsage.id)).where(
-            CouponUsage.coupon_id == coupon.id,
-            CouponUsage.user_id == user_id,
-        )
-    ).one()
+    discount_repo = di_get("discount_repo")
+    user_uses = discount_repo.count_coupon_uses_by_user(session, coupon.id, user_id)
     if user_uses >= coupon.uses_per_user:
         return False, "You have already used this coupon the maximum number of times."
 
@@ -108,7 +85,7 @@ def validate_coupon(
     Validate a coupon code for the current user.
     Pass `order_total` as a query param to get the computed discount_amount.
     """
-    coupon = session.exec(select(Coupon).where(Coupon.code == code.upper())).first()
+    coupon = di_get("discount_repo").get_by_code(session, code)
     if not coupon:
         return CouponValidateResponse(valid=False, message="Coupon code not found.")
 
@@ -134,7 +111,7 @@ def list_coupons(
     """Admin: list all coupons."""
     if not current_user.is_superuser:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required.")
-    return session.exec(select(Coupon)).all()
+    return di_get("discount_repo").list_all(session)
 
 
 @router.post("/coupons", response_model=Coupon, status_code=status.HTTP_201_CREATED)
@@ -147,13 +124,13 @@ def create_coupon(
     if not current_user.is_superuser:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required.")
 
-    existing = session.exec(select(Coupon).where(Coupon.code == body.code.upper())).first()
+    existing = di_get("discount_repo").get_by_code(session, body.code)
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Coupon code already exists.")
 
     coupon = Coupon(**body.model_dump())
     coupon.code = coupon.code.upper()
-    session.add(coupon)
+    di_get("discount_repo").create_coupon(session, coupon)
     session.commit()
     session.refresh(coupon)
     logger.info("Coupon created", code=coupon.code, admin_id=current_user.id)
@@ -180,7 +157,7 @@ def delete_coupon(
 @router.get("/bulk-discounts", response_model=List[BulkDiscount])
 def list_bulk_discounts(session: Session = Depends(get_session)):
     """Return all active bulk discounts (public — used by frontend cart logic)."""
-    return session.exec(select(BulkDiscount).where(BulkDiscount.is_active == True)).all()
+    return di_get("bulk_discount_repo").list_active(session)
 
 
 @router.post("/bulk-discounts", response_model=BulkDiscount, status_code=status.HTTP_201_CREATED)
@@ -202,7 +179,7 @@ def create_bulk_discount(
 @router.get("/tiers", response_model=List[CustomerTier])
 def list_tiers(session: Session = Depends(get_session)):
     """Return all customer tiers (public)."""
-    return session.exec(select(CustomerTier)).all()
+    return di_get("tier_repo").list_all(session)
 
 
 @router.post("/tiers", response_model=CustomerTier, status_code=status.HTTP_201_CREATED)

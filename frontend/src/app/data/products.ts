@@ -10,6 +10,15 @@ export interface Product {
   colors: string[];
   inStock: boolean;
   badge?: 'new' | 'sale' | 'bestseller';
+  variants?: Array<{
+    id: number;
+    size: string;
+    color: string;
+    priceAdjustment: number;
+    stockQuantity: number;
+    availableStock: number;
+    isAvailable: boolean;
+  }>;
 }
 
 export const products: Product[] = [
@@ -135,4 +144,5 @@ export interface CartItem extends Product {
   quantity: number;
   selectedSize: string;
   selectedColor: string;
+  variantId?: number;
 }

@@ -88,3 +88,28 @@ class CustomerTier(SQLModel, table=True):
         if v not in CUSTOMER_TIERS:
             raise ValueError(f"Tier name must be one of {CUSTOMER_TIERS}")
         return v
+
+
+class CouponValidateResponse(SQLModel):
+    valid: bool
+    discount_type: Optional[str] = None
+    discount_amount: Optional[float] = None
+    discount_value: Optional[float] = None
+    message: str
+
+
+class CouponCreate(SQLModel):
+    code: str
+    discount_type: str
+    value: float
+    max_uses: Optional[int] = None
+    uses_per_user: int = 1
+    expiry_date: Optional[datetime] = None
+    min_order_value: float = 0.0
+    is_active: bool = True
+
+
+class BulkDiscountCreate(SQLModel):
+    product_id: int
+    min_quantity: int
+    discount_percent: float

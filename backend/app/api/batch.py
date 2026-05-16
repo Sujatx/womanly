@@ -7,8 +7,9 @@ from pydantic import BaseModel
 
 from app.db import get_session
 from app.models.product import Product
-from app.api.products import _build_product_detail, ProductDetail
-from app.middleware.validation import validate_phone, validate_postal_code
+from app.models import ProductDetail
+from app.api.products import _build_product_detail
+from app.middleware import validate_phone, validate_postal_code
 
 router = APIRouter(prefix="/api/v1/batch", tags=["batch"])
 
@@ -71,21 +72,15 @@ async def batch_get_products(
     if not request.product_ids:
         return ProductBatchResponse(products=[], not_found=[])
     
-    # Single optimized query
-    from sqlmodel import selectinload
-    
-    query = select(Product).where(
-        Product.id.in_(request.product_ids),
-        Product.deleted_at.is_(None)
+    from app.di_container import get as di_get
+
+    product_repo = di_get("product_repo")
+    products = product_repo.get_many_by_ids(
+        session=session,
+        ids=request.product_ids,
+        include_variants=request.include_variants,
+        include_images=request.include_images,
     )
-    
-    if request.include_variants:
-        query = query.options(selectinload(Product.variants))
-    
-    if request.include_images:
-        query = query.options(selectinload(Product.product_images))
-    
-    products = session.exec(query).all()
     
     # Find which IDs were not found
     found_ids = {p.id for p in products}

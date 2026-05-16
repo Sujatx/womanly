@@ -3,6 +3,7 @@ from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
 from app.db import get_session
 from app.models import Cart, CartItem, CartRead, CartItemCreate, User, CartItemRead
+from app.di_container import get as di_get
 from app.models.product import ProductVariant, Product
 from app.deps import get_current_user
 
@@ -10,16 +11,8 @@ router = APIRouter()
 
 def get_cart_with_items(session: Session, user_id: int):
     """Get cart with all related data in a single query (no N+1)."""
-    statement = (
-        select(Cart)
-        .where(Cart.user_id == user_id)
-        .options(
-            selectinload(Cart.items).options(
-                selectinload(CartItem.variant).selectinload(ProductVariant.product)
-            )
-        )
-    )
-    return session.exec(statement).first()
+    cart_repo = di_get("cart_repo")
+    return cart_repo.get_cart_with_items(session, user_id)
 
 @router.get("/", response_model=CartRead)
 def get_cart(

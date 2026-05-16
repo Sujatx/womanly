@@ -73,12 +73,34 @@ function App() {
     loadProducts();
   }, []);
 
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('womanly_cart_items');
+      if (stored) {
+        setCartItems(JSON.parse(stored));
+      }
+    } catch {
+      // Ignore malformed local storage and start empty
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('womanly_cart_items', JSON.stringify(cartItems));
+    } catch {
+      // Ignore storage failures in restricted browsers
+    }
+  }, [cartItems]);
+
   const cartItemCount = useMemo(
     () => cartItems.reduce((sum, item) => sum + item.quantity, 0),
     [cartItems],
   );
 
-  const handleAddToCart = (product: Product, details: { quantity: number; selectedSize: string; selectedColor: string }) => {
+  const handleAddToCart = (
+    product: Product,
+    details: { quantity: number; selectedSize: string; selectedColor: string; variantId?: number },
+  ) => {
     const newItem: CartItem = {
       ...product,
       ...details,
@@ -123,6 +145,7 @@ function App() {
       quantity: details.quantity,
       selectedSize: variant.size || '',
       selectedColor: variant.color || '',
+      variantId: details.variantId,
     };
 
     setCartItems((prev) => {
@@ -211,12 +234,14 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Navbar */}
-      <Navbar
-        onSearchOpen={() => setSearchOpen(true)}
-        onCartOpen={() => setCartOpen(true)}
-        cartItemCount={cartItemCount}
-      />
+      {/* Navbar: hide on auth routes */}
+      {!(routePath === '/auth' || routePath === '/login' || routePath === '/signup') && (
+        <Navbar
+          onSearchOpen={() => setSearchOpen(true)}
+          onCartOpen={() => setCartOpen(true)}
+          cartItemCount={cartItemCount}
+        />
+      )}
 
       {/* Main Content */}
       <main id="main-content" className="flex-1">
@@ -225,8 +250,8 @@ function App() {
         </Suspense>
       </main>
 
-      {/* Footer */}
-      <Footer />
+      {/* Footer: hide on auth routes */}
+      {!(routePath === '/auth' || routePath === '/login' || routePath === '/signup') && <Footer />}
 
       {/* Modals & Overlays (rendered as portals) */}
       <Suspense fallback={null}>
